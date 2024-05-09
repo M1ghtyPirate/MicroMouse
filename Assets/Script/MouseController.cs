@@ -20,8 +20,6 @@ public class MouseController : MonoBehaviour {
     SensorController SensorRight;
     [SerializeField]
     SensorController SensorLeft;
-    [SerializeField]
-    public bool UseManualControl;
     private bool _ShowPathMarkers;
     [SerializeField]
     public bool ShowPathMarkers { get => _ShowPathMarkers; set { PathMarkersObject?.SetActive(value); _ShowPathMarkers = value; } }
@@ -38,6 +36,12 @@ public class MouseController : MonoBehaviour {
     private bool IsTurning;
     private float TargetRotation = 0f;
     private float RotationDifference { get => TargetRotation - gameObject.transform.rotation.eulerAngles.y; }
+    private float AbsRotationDifference { get => Mathf.Min(Mathf.Abs(TargetRotation - gameObject.transform.rotation.eulerAngles.y), Mathf.Abs(TargetRotation + 360f - gameObject.transform.rotation.eulerAngles.y)); }
+    private float RelRotationDifference { get => (Mathf.Abs(RotationDifference) < 180f ? RotationDifference.CompareTo(0) : -RotationDifference.CompareTo(0)) * AbsRotationDifference; }
+    private float TargetDirection { get => Quaternion.LookRotation(gameObject.transform.position - TargetPosition).eulerAngles.y; }
+    private float TargetDirectionDifference { get => TargetDirection - gameObject.transform.rotation.eulerAngles.y; }
+    private float AbsTargetDirectionDifference { get => Mathf.Min(Mathf.Abs(TargetDirectionDifference - gameObject.transform.rotation.eulerAngles.y), Mathf.Abs(TargetDirectionDifference + 360f - gameObject.transform.rotation.eulerAngles.y)); }
+    private float RelTargetDirectionDifference { get => (Mathf.Abs(TargetDirectionDifference) < 180f ? TargetDirectionDifference.CompareTo(0) : -TargetDirectionDifference.CompareTo(0)) * AbsTargetDirectionDifference; }
 
     private bool IsTravelling;
     private Vector3 TargetPosition;
@@ -62,6 +66,21 @@ public class MouseController : MonoBehaviour {
         }
     }
 
+    //test
+    private float TargetDistance { get => Vector3.Distance(gameObject.transform.position, TargetPosition); }
+    private NeuralNetwork NNet;
+    private Vector3 InitialMousePosition;
+    private Quaternion InitialMouseRotation;
+    private float TravelTime;
+    //private float LastAbsRotationDifference;
+    private float LastAbsTargetDirectionDifference;
+    private float LastTargetDistance;
+    public Action OnNeuralDeath;
+    [SerializeField]
+    public int TargetsReached { get; private set; }
+    public Enums.ControlMode CurrentControlMode = Enums.ControlMode.Manual;
+    //test
+
     #region MazeMapping
 
     private int MazeRows = 16;
@@ -69,9 +88,13 @@ public class MouseController : MonoBehaviour {
     private Enums.Direction[,] MazePaths;
     private int[,] MazeWalls;
     private Point CurrentCell;
+    [SerializeField]
     private Enums.Direction CurrentDirection = Enums.Direction.Forward;
     private Point StartingCell = new Point(0, 0);
-    private Point CenterCell = new Point(7, 7);
+    public Point CenterCell = new Point(7, 7);
+    //test
+    //private Point CenterCell = new Point(1, 0);
+    //test
     private Point TargetCell;
 
     #endregion
@@ -81,14 +104,25 @@ public class MouseController : MonoBehaviour {
     #region UpdateMethods
 
     private void OnEnable() {
+        CurrentDirection = Enums.Direction.Forward;
         TargetPosition = gameObject.transform.position;
         CurrentCell = new Point(StartingCell.X, StartingCell.Y);
         TargetCell = new Point(CenterCell.X, CenterCell.Y);
+        IsTravelling = false;
         //ShowPathMarkers = true;
 
         InitializePathMarkers();
         InitializeMazeWalls();
         InitializeMazePaths(TargetCell);
+
+        //test
+        InitialMousePosition = gameObject.transform.position;
+        InitialMouseRotation = gameObject.transform.rotation;
+        TravelTime = 0f;
+        TargetsReached = 0;
+        TurnToRotation(0);
+        IsTurning = false;
+        //test
     }
 
     // Start is called before the first frame update
@@ -101,25 +135,79 @@ public class MouseController : MonoBehaviour {
 
     }
 
+    public void ResetNeural(NeuralNetwork nnet = null) {
+        if (nnet != null) {
+            NNet = nnet;
+        }
+        if (CurrentControlMode != Enums.ControlMode.NeuralTraining) {
+            return;
+        }
+        gameObject.transform.position = InitialMousePosition;
+        //gameObject.transform.rotation = InitialMouseRotation;
+        //randomRotationTest
+        var rotationDirection = new Vector3(UnityEngine.Random.Range(-1f, 1f), 0, UnityEngine.Random.Range(-1f, 1f));
+        gameObject.transform.rotation = Quaternion.LookRotation(rotationDirection);
+        //randomRotationTest
+        GetComponent<Rigidbody>().velocity = Vector3.zero;
+        GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
+        OnEnable();
+    }
+
+    private void KillNeural() {
+        if (CurrentControlMode != Enums.ControlMode.NeuralTraining) {
+            return;
+        }
+        OnNeuralDeath?.Invoke();
+    }
+
+    private void OnCollisionEnter(Collision collision) {
+        if (collision.gameObject.name == "Floor") {
+            return;
+        }
+        KillNeural();
+    }
+
     private void FixedUpdate() {
-        if(!IsActive) {
+        if (!IsActive) {
             return;
         }
 
-        if (IsTurning) {
-            Turn();
-            return;
-        }
+        //Debug.Log($"Current control mode: {CurrentControlMode + ""}");
+        switch (CurrentControlMode) {
+            case Enums.ControlMode.Algorithm:
+                if (IsTurning) {
+                    Turn();
+                    break;
+                }
 
-        if (IsTravelling) {
-            Travel();
-            return;
-        }
+                if (IsTravelling) {
+                    Travel();
+                    break;
+                }
+                AutoControl();
+                break;
+            case Enums.ControlMode.Manual:
+                if (IsTurning) {
+                    Turn();
+                    break;
+                }
 
-        if(UseManualControl) {
-            ManualControl();
-        } else {
-            AutoControl();
+                if (IsTravelling) {
+                    Travel();
+                    break;
+                }
+                ManualControl();
+                break;
+            case Enums.ControlMode.Neural:
+            case Enums.ControlMode.NeuralTraining:
+                if (IsTravelling) {
+                    TravelNeural();
+                    return;
+                }
+                NeuralControl();
+                break;
+            default:
+                break;
         }
     }
 
@@ -137,7 +225,7 @@ public class MouseController : MonoBehaviour {
         var nextMove = MazePaths[CurrentCell.X, CurrentCell.Y];
 
         if (nextMove == 0) {
-            if(TargetCell.X != CurrentCell.X && TargetCell.Y == CurrentCell.Y) {
+            if(TargetCell.X != CurrentCell.X && TargetCell.Y != CurrentCell.Y) {
                 TurnToRotation(TargetRotation + 90);
                 Debug.Log($"No path found.");
                 return;
@@ -227,11 +315,153 @@ public class MouseController : MonoBehaviour {
         WheelLeft.AccelerationMultiplier += TurnMultiplier / 2;
     }
 
+    private void NeuralControl() {
+        if (CurrentCell.X == StartingCell.X && CurrentCell.Y == StartingCell.Y) {
+            MazeWalls[CurrentCell.X, CurrentCell.Y] |= (int)Enums.Direction.Right;
+            UpdateWallCellWallMarkers(new Point(CurrentCell.X, CurrentCell.Y));
+            MazeWalls[CurrentCell.X + 1, CurrentCell.Y] |= (int)Enums.Direction.Left;
+            UpdateWallCellWallMarkers(new Point(CurrentCell.X + 1, CurrentCell.Y));
+        } else {
+            UpdateCellWalls();
+        }
+        
+
+        if (((int)MazePaths[CurrentCell.X, CurrentCell.Y] & MazeWalls[CurrentCell.X, CurrentCell.Y]) > 0) {
+            InitializeMazePaths(TargetCell);
+        }
+
+        var nextMove = MazePaths[CurrentCell.X, CurrentCell.Y];
+
+        if (nextMove == 0) {
+            if (TargetCell.X != CurrentCell.X && TargetCell.Y != CurrentCell.Y) {
+                TurnToRotation(TargetRotation + 90);
+                Debug.Log($"No path found.");
+                return;
+            }
+            TargetCell = TargetCell.X == CenterCell.X && TargetCell.Y == CenterCell.Y ?
+                new Point(StartingCell.X, StartingCell.Y) :
+                new Point(CenterCell.X, CenterCell.Y);
+            InitializeMazePaths(TargetCell);
+            Debug.Log($"Target reached, heading towards: [{TargetCell.X}, {TargetCell.Y}]");
+            return;
+        }
+
+        if (nextMove != CurrentDirection) {
+            float degrees;
+            if ((((int)nextMove >> 2 | (int)nextMove << 2) & (int)CurrentDirection) > 0) {
+                degrees = 180;
+            } else if ((((int)nextMove >> 1 | (int)nextMove << 3) & (int)CurrentDirection) > 0) {
+                degrees = 90;
+            } else {
+                degrees = -90;
+            }
+            TurnToRotation(TargetRotation + degrees);
+            IsTurning = false;
+            CurrentDirection = nextMove;
+        }
+
+        TravelDistanceNeural(0.18f);
+        switch (CurrentDirection) {
+            case Enums.Direction.Forward:
+                CurrentCell.Y++;
+                break;
+            case Enums.Direction.Right:
+                CurrentCell.X++;
+                break;
+            case Enums.Direction.Backward:
+                CurrentCell.Y--;
+                break;
+            case Enums.Direction.Left:
+                CurrentCell.X--;
+                break;
+        }
+
+    }
+
+    private void TravelDistanceNeural(float distance) {
+        switch (CurrentDirection) {
+            case Enums.Direction.Forward:
+                TargetPosition.z += distance;
+                break;
+            case Enums.Direction.Right:
+                TargetPosition.x += distance;
+                break;
+            case Enums.Direction.Backward:
+                TargetPosition.z -= distance;
+                break;
+            case Enums.Direction.Left:
+                TargetPosition.x -= distance;
+                break;
+        }
+        //LastAbsRotationDifference = AbsRotationDifference;
+        LastAbsTargetDirectionDifference = AbsTargetDirectionDifference;
+        LastTargetDistance = TargetDistance;
+        IsTravelling = true;
+        TargetsReached++;
+    }
+
+    private void CalculateFitness() {
+        //Debug.Log($"RotationDifference: {LastAbsRotationDifference} / {AbsRotationDifference} TargetDistance: {LastTargetDistance} / {TargetDistance}");
+        //Debug.Log($"AbsTargetDirectionDifference: {LastAbsTargetDirectionDifference} / {AbsTargetDirectionDifference} TargetDistance: {LastTargetDistance} / {TargetDistance} RelTargetDirectionDifference {RelTargetDirectionDifference}");
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //NNet.Fitness += (AbsTargetDirectionDifference < 5f ? 5f : 0) + (AbsTargetDirectionDifference < 5f ? (LastTargetDistance - TargetDistance) * 1f : 0f) + TargetsReached * 20f;
+        NNet.Fitness += (AbsTargetDirectionDifference < 5f ? 5f : 0) + (AbsTargetDirectionDifference < 5f ? (TargetDistance < LastTargetDistance ? 5f : 0f) : 0f) + TargetsReached * (TargetsReached > 1 ? 10f : 0f);
+        //+ (Mathf.Abs(Mathf.Abs(WheelLeft.AccelerationMultiplier) - Mathf.Abs(WheelRight.AccelerationMultiplier)) < 0.05f ? 0.1f : 0f);
+        //Debug.Log($"Fitness: {NNet.Fitness}");
+        if(NNet.Fitness > 100000) {
+            //KillNeural();
+        }
+    }
+
+    private void TravelNeural() {
+        TravelTime += Time.deltaTime;
+        if(TravelTime >= 2) {
+            KillNeural();
+            return;
+        }
+        //Debug.Log($"Position diff: {PositionDifference}");
+        CalculateFitness();
+        //LastAbsRotationDifference = AbsRotationDifference;
+        LastAbsTargetDirectionDifference = AbsTargetDirectionDifference;
+        LastTargetDistance = TargetDistance;
+        //Debug.Log($"TargetLoc: [{TargetPosition.x},{TargetPosition.y}, {TargetPosition.z}]");
+        if (TargetDistance < 2e-2 && AbsRotationDifference < 10) {
+            TravelTime = 0f;
+            IsTravelling = false;
+            return;
+        }
+
+        var rigidBody = gameObject.GetComponent<Rigidbody>();
+        var dX = TargetPosition.x - gameObject.transform.position.x;
+        var dZ = TargetPosition.z - gameObject.transform.position.z;
+        //NNet.CalculateLayers(new float[]{ dX, dZ, gameObject.transform.eulerAngles.z, RotationDifference, rigidBody.velocity.magnitude});
+        //NNet.CalculateLayers(new float[]{ TargetDistance, RelRotationDifference, rigidBody.velocity.magnitude});
+        //!!!!!!!!!!!!!!!!!!
+        //NNet.CalculateLayers(new float[]{ TargetDistance, RelTargetDirectionDifference, rigidBody.velocity.magnitude});
+        NNet.CalculateLayers(new float[]{ TargetDistance, RelTargetDirectionDifference, rigidBody.velocity.magnitude});
+        /*
+        Debug.Log($"Rotation: {TargetRotation} [{gameObject.transform.rotation.eulerAngles.x}, {gameObject.transform.rotation.eulerAngles.y}, {gameObject.transform.rotation.eulerAngles.z}]");
+        Debug.Log($"Input: [{TargetDistance}, {RelTargetDirectionDifference}, {rigidBody.velocity.magnitude}]");
+        Debug.Log($"Input layer: [{NNet.InputLayer[0]}, {NNet.InputLayer[1]}, {NNet.InputLayer[2]}]");
+        Debug.Log($"Got values: {NNet.OutputLayer.Length} [{NNet.OutputLayer[0]}, {NNet.OutputLayer[1]}]");
+        */
+        //WheelRight.BrakeMultiplier = 1f * NNet.OutputLayer[1];
+        //WheelLeft.AccelerationMultiplier = 0.4f * NNet.OutputLayer[2];
+        //WheelLeft.BrakeMultiplier = 1f * NNet.OutputLayer[3];
+
+        WheelRight.AccelerationMultiplier = 0.4f * NNet.OutputLayer[0];
+        WheelLeft.AccelerationMultiplier = 0.4f * NNet.OutputLayer[1];
+
+        //simpler controls test
+        //WheelRight.AccelerationMultiplier = 0.4f * NNet.OutputLayer[0];
+        //WheelLeft.AccelerationMultiplier = 0.4f * NNet.OutputLayer[0] * NNet.OutputLayer[1].CompareTo(0);
+    }
+
     private void RecalculateCurrentDirection() {
-        Debug.Log($"CurrentRotation:{gameObject.transform.rotation.eulerAngles.y};OldRotation:{TargetRotation};");
+        //Debug.Log($"CurrentRotation:{gameObject.transform.rotation.eulerAngles.y};OldRotation:{TargetRotation};");
         TargetRotation = ((int)gameObject.transform.rotation.eulerAngles.y / 90) * 90 
             + (((int)gameObject.transform.rotation.eulerAngles.y % 90) > 45 ? 90 : 0);
-        Debug.Log($"NewRotation:{TargetRotation};Floor:{((int)gameObject.transform.rotation.eulerAngles.y / 90) * 90};Residue:{((int)gameObject.transform.rotation.eulerAngles.y % 90)}");
+        //Debug.Log($"NewRotation:{TargetRotation};Floor:{((int)gameObject.transform.rotation.eulerAngles.y / 90) * 90};Residue:{((int)gameObject.transform.rotation.eulerAngles.y % 90)}");
         switch (TargetRotation) {
             case 0f:
             case 360f:
@@ -410,7 +640,7 @@ public class MouseController : MonoBehaviour {
 
         cellWalls &= 0xF;
 
-        Debug.Log($"cellWalls[{CurrentCell.X}, {CurrentCell.Y}]:{Convert.ToString(cellWalls, 2)}");
+        //Debug.Log($"cellWalls[{CurrentCell.X}, {CurrentCell.Y}]:{Convert.ToString(cellWalls, 2)}");
 
         if((MazeWalls[CurrentCell.X, CurrentCell.Y] & cellWalls) == cellWalls) {
             return;
@@ -438,8 +668,8 @@ public class MouseController : MonoBehaviour {
     }
 
     private void InitializePathMarkers() {
-        PathMarkersObject = GameObject.Find("PathMarkers");
-        Debug.Log($"PathMarkers object found: {PathMarkersObject != null}");
+        PathMarkersObject = PathMarkersObject ?? GameObject.Find("PathMarkers");
+        //Debug.Log($"PathMarkers object found: {PathMarkersObject != null}");
         if(PathMarkersObject == null) {
             return;
         }
@@ -451,7 +681,7 @@ public class MouseController : MonoBehaviour {
             .GetComponentsInChildren<Transform>()
             .Where(t => t.parent == pathMarkersTransform)
             .ToList();
-        Debug.Log($"MarkerColumns count: {markerColumns.Count}");
+        //Debug.Log($"MarkerColumns count: {markerColumns.Count}");
         PathMarkers = new GameObject[MazeColumns, MazeRows];
         for (var j = 0; j < MazeRows; j++) {
             for (var i = 0; i < MazeColumns; i++) {
@@ -463,15 +693,20 @@ public class MouseController : MonoBehaviour {
                 foreach (var wall in PathMarkers[i, j].GetComponentsInChildren<MeshRenderer>().ToList()) {
                     wall.enabled = false;
                 }
-                Debug.Log($"PathMarker[{i}, {j}] found: {PathMarkers[i, j] != null}");
-                Debug.Log($"ColumnName: {markerColumns[i].name}");
-                Debug.Log($"MarkerName: {PathMarkers[i, j].name}");
+                //Debug.Log($"PathMarker[{i}, {j}] found: {PathMarkers[i, j] != null}");
+                //Debug.Log($"ColumnName: {markerColumns[i].name}");
+                //Debug.Log($"MarkerName: {PathMarkers[i, j].name}");
             }
         }
     }
 
     private void DrawPath(Point point) {
-        foreach(var marker in PathMarkers) {
+        if (PathMarkers == null) {
+            Debug.LogError("PathMarkers object not found.");
+            return;
+        }
+
+        foreach (var marker in PathMarkers) {
             //marker.SetActive(false);
             marker.GetComponent<MeshRenderer>().enabled = false;
         }
@@ -500,6 +735,10 @@ public class MouseController : MonoBehaviour {
     }
 
     private void UpdateWallCellWallMarkers(Point cell) {
+        if (PathMarkers == null) {
+            Debug.LogError("PathMarkers object not found.");
+            return;
+        }
         var markers = PathMarkers[cell.X, cell.Y].GetComponentsInChildren<MeshRenderer>(true);
         if((MazeWalls[cell.X, cell.Y] & (int)Enums.Direction.Left) > 0) {
             markers.FirstOrDefault(r => r.name == "WallMarkerLeft").enabled = true;

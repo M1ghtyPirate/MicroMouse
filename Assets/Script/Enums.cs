@@ -13,4 +13,11 @@ public static class Enums
         Left = 0x8
     }
 
+    public enum ControlMode {
+        Manual,
+        Algorithm,
+        NeuralTraining,
+        Neural
+    }
+
 }
