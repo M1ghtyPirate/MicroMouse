@@ -61,10 +61,10 @@
     <Compile Include="Assets\Script\Neural\NeuralNetwork.cs" />
     <Compile Include="Assets\Script\MenuController.cs" />
     <Compile Include="Assets\Script\SensorController.cs" />
+    <Compile Include="Assets\Script\Neural\NeuralNetworkSerialization.cs" />
     <Compile Include="Assets\Script\WheelController.cs" />
     <Compile Include="Assets\Script\MouseController.cs" />
     <Compile Include="Assets\Script\Neural\GeneticManager.cs" />
-    <Compile Include="Assets\Script\Neural\NeuralNetworkSerialization.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

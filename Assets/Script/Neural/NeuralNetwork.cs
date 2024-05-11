@@ -23,21 +23,35 @@ public class NeuralNetwork
         HiddenLayers = new List<float[]>();
     }
 
-    public NeuralNetwork(int inputLayerNeuronCount, int outputLayerNeuronCount, int hiddenLayersNeuronCount, int hiddenLayersCount, bool initialize = false) : this(inputLayerNeuronCount, outputLayerNeuronCount) {
-        AddHiddenLayers(hiddenLayersNeuronCount, hiddenLayersCount);
-        if(initialize) {
+    public NeuralNetwork(int inputLayerNeuronCount, int outputLayerNeuronCount, int hiddenLayersNeuronCount, int hiddenLayersCount, bool initialize = false) 
+        : this(inputLayerNeuronCount, outputLayerNeuronCount, new List<(int, int)> { (hiddenLayersNeuronCount, hiddenLayersCount) }, initialize) {
+    }
+
+    public NeuralNetwork(int inputLayerNeuronCount, int outputLayerNeuronCount, IEnumerable<(int, int)> layersStructure, bool initialize = false) : this(inputLayerNeuronCount, outputLayerNeuronCount) {
+        AddHiddenLayers(layersStructure);
+        if (initialize) {
             InitializeWeights();
             InitializeBiases();
         }
     }
 
     public void AddHiddenLayers(int neuronCount, int layerCount) {
-        if (neuronCount < 2 || layerCount < 1) {
+        if (neuronCount < 1 || layerCount < 1) {
             throw new ArgumentException($"Invalid hidden layer ({layerCount}) or hidden layer neuron ({neuronCount}) count.");
         }
 
         for(var i = 0; i < layerCount; i++) {
             HiddenLayers.Add(new float[neuronCount]);
+        }
+    }
+
+    public void AddHiddenLayers(IEnumerable<(int, int)> layersStructure, bool initialize = false) {
+        foreach(var layers in layersStructure) {
+            AddHiddenLayers(layers.Item1, layers.Item2);
+        }
+        if (initialize) {
+            InitializeWeights();
+            InitializeBiases();
         }
     }
 
@@ -53,12 +67,13 @@ public class NeuralNetwork
             int cols;
             if(i == 0) {
                 rows = InputLayer.Length;
-                cols = HiddenLayers[0].Length;
+                cols = HiddenLayers[i].Length;
             } else if(i == HiddenLayers.Count) {
-                rows = HiddenLayers.Last().Length;
+                rows = HiddenLayers[i - 1].Length;
                 cols = OutputLayer.Length;
             } else {
-                rows = cols = HiddenLayers[i].Length;
+                rows = cols = HiddenLayers[i - 1].Length;
+                cols = HiddenLayers[i].Length;
             }
             Weights.Add(new float[rows, cols]);
             if(randomizeValues) {
@@ -92,6 +107,9 @@ public class NeuralNetwork
         if(Weights == null || Weights.Count != HiddenLayers.Count + 1) {
             InitializeWeights();
         }
+        if (Biases == null || Biases.Length != HiddenLayers.Count + 1) {
+            InitializeBiases();
+        }
         var inputArr = input?.ToArray();
         if(inputArr == null || inputArr.Length != InputLayer.Length) {
             throw new ArgumentException($"Invalid input length ({inputArr?.Length + ""}).");
@@ -120,5 +138,41 @@ public class NeuralNetwork
                 outputVector[j] = resultVector[j];
             }
         }
+    }
+
+    public List<(int, int)> GetHiddenLayersStructure() {
+        var structure = new List<(int, int)>();
+        var neurons = HiddenLayers.FirstOrDefault().Length;
+        var layers = 0;
+        foreach (var layer in HiddenLayers) {
+            if (neurons == layer.Length) {
+                layers++;
+            } else {
+                structure.Add((neurons, layers));
+                neurons = layer.Length;
+                layers = 1;
+            }
+        }
+        structure.Add((neurons, layers));
+        return structure;
+    }
+
+    public NeuralNetwork Clone(bool cloneCurrentValues = false) {
+        var clone = new NeuralNetwork(InputLayer.Length, OutputLayer.Length, GetHiddenLayersStructure(), true);
+        for (var i = 0; i < Weights.Count; i++) {
+            //Debug.Log($"Weights: {parent1.Weights.Count} / {child1.Weights.Count}");
+            clone.Weights[i] = (float[,])Weights[i].Clone();
+        }
+        clone.Biases = (float[])Biases.Clone();
+        if(cloneCurrentValues) {
+            clone.Fitness = Fitness;
+            clone.InputLayer = (float[])InputLayer.Clone();
+            for (var i = 0; i < HiddenLayers.Count; i++) {
+                //Debug.Log($"Weights: {parent1.Weights.Count} / {child1.Weights.Count}");
+                clone.HiddenLayers[i] = (float[])HiddenLayers[i].Clone();
+            }
+            clone.OutputLayer = (float[])OutputLayer.Clone();
+        }
+        return clone;
     }
 }

@@ -15,16 +15,16 @@ public class GeneticManager : MonoBehaviour
     [Header("Controls")]
     public int PopulationSize = 85;
     [Range(0.0f, 1.0f)]
-    public float mutationChance = 0.055f;
+    public float MutationChance;
 
     [Header("Crossover Controls")]
-    public int bestAgentSelection = 20;
-    public int worstAgentSelection = 6;
-    public int numberToCrossover = 20;
+    public int BestAgents = 20;
+    public int WorstAgents = 6;
+    public int Children = 20;
 
-    private List<NeuralNetwork> genePool;
+    private List<NeuralNetwork> GenePool;
 
-    private List<NeuralNetwork> population;
+    public List<NeuralNetwork> Population;
 
     [Header("Public View")]
     public int currentGeneration;
@@ -32,38 +32,43 @@ public class GeneticManager : MonoBehaviour
 
     public int InputLayerNeuronCount = 3;
     public int OutputLayerNeuronCount = 2;
-    public int HiddenLayersNeuronCount = 9;
-    public int HiddenLayersCount = 10;
+    public List<(int, int)> HiddenLayerStructure;
 
-    public string TopFitness;
+    public List<float> TopFitnesses;
 
     public float TargetFitness;
-    public Action<List<NeuralNetwork>> OnTrainingComplete;
+    public Action<GeneticManager> OnTrainingComplete;
+    public Action<GeneticManager> OnRepopulated;
+    public Action<GeneticManager> OnNextAgentStart;
 
-    public void StartTraining(List<NeuralNetwork> existingPopulation = null) {
+    public void StartTraining(List<NeuralNetwork> existingPopulation = null, int generation = 1, IEnumerable<(int, int)> layersStructure = null, float mutationChance = 0.055f) {
+        HiddenLayerStructure = layersStructure?.ToList() ?? new List<(int, int)> { (9, 2) };
         MouseController.OnNeuralDeath += OnNeuralDeath;
-        currentGeneration = 0;
+        currentGeneration = generation;
         currentGenome = 0;
+        MutationChance = mutationChance;
         TargetFitness = float.MaxValue;
-        population = existingPopulation ?? new List<NeuralNetwork>();
-        GrowPopulation(population, PopulationSize);
-        genePool = new List<NeuralNetwork>();
+        Population = existingPopulation ?? new List<NeuralNetwork>();
+        GrowPopulation(Population, PopulationSize);
+        GenePool = new List<NeuralNetwork>();
         OnNeuralDeath();
     }
 
     private void GrowPopulation(List<NeuralNetwork> population, int targetSize) {
         while(population.Count < targetSize) {
-            var nnet = new NeuralNetwork(InputLayerNeuronCount, OutputLayerNeuronCount, HiddenLayersNeuronCount, HiddenLayersCount, true);
+            //var nnet = new NeuralNetwork(InputLayerNeuronCount, OutputLayerNeuronCount, HiddenLayersNeuronCount, HiddenLayersCount, true);
+            var nnet = new NeuralNetwork(InputLayerNeuronCount, OutputLayerNeuronCount, HiddenLayerStructure, true);
             population.Add(nnet);
         }
     }
 
     private void OnNeuralDeath() {
-        if (currentGenome == PopulationSize) {
+        if (currentGenome == Population.Count) {
             RePopulate();
         }
         if (MouseController.IsActive) {
-            MouseController.ResetNeural(population[currentGenome++]);
+            MouseController.Reset(Population[currentGenome++]);
+            OnNextAgentStart?.Invoke(this);
         }
     }
 
@@ -72,40 +77,28 @@ public class GeneticManager : MonoBehaviour
             //var genePoolEntries = Mathf.RoundToInt(nnet.Fitness * 10);
             var genePoolEntries = Mathf.Ceil(nnet.Fitness);
             for (var j = 0; j < genePoolEntries; j++) {
-                genePool.Add(nnet);
+                GenePool.Add(nnet);
             }
         }
     }
 
-    private void Crossover(List<NeuralNetwork> newPpopulation) {
-        if (genePool.Distinct().Count() < 2) {
+    private void Crossover(List<NeuralNetwork> population) {
+        if (GenePool.Distinct().Count() < 2) {
             return;
         }
-        for (var i = 0; i < numberToCrossover; i += 2) {
-            var index = Random.Range(0, genePool.Count);
+        var children = new List<NeuralNetwork>();
+        for (var i = 0; i < Children && population.Count + children.Count + 1 < PopulationSize; i += 2) {
+            var index = Random.Range(0, GenePool.Count);
             //Debug.LogWarning($"genePool Count: {genePool.Count} / Index: {index}");
-            var parent1 = genePool[index];
-            var remainingGenePool = genePool.Where(g => g != parent1).ToList();
+            var parent1 = GenePool[index];
+            var remainingGenePool = GenePool.Where(g => g != parent1).ToList();
             var parent2 = remainingGenePool[Random.Range(0, remainingGenePool.Count)];
-            var child1 = new NeuralNetwork(InputLayerNeuronCount, OutputLayerNeuronCount, HiddenLayersNeuronCount, HiddenLayersCount, true);
-            var child2 = new NeuralNetwork(InputLayerNeuronCount, OutputLayerNeuronCount, HiddenLayersNeuronCount, HiddenLayersCount, true);
+            var child1 = new NeuralNetwork(InputLayerNeuronCount, OutputLayerNeuronCount, HiddenLayerStructure, true);
+            var child2 = new NeuralNetwork(InputLayerNeuronCount, OutputLayerNeuronCount, HiddenLayerStructure, true);
             for (var j = 0; j < parent1.Weights.Count; j++) {
                 //Debug.Log($"Weights: {parent1.Weights.Count} / {child1.Weights.Count}");
                 child1.Weights[j] = (float[,])parent1.Weights[j].Clone();
                 child2.Weights[j] = (float[,])parent2.Weights[j].Clone();
-                /*
-                for (var k = 0; k < child1.Weights[j].GetLength(0); k++) {
-                    for (var l = 0; l < child1.Weights[j].GetLength(1); l++) {
-                        if (Random.Range(0, 2) == 0) {
-                            child1.Weights[j][k, l] = parent1.Weights[j][k, l];
-                            child2.Weights[j][k, l] = parent2.Weights[j][k, l];
-                        } else {
-                            child1.Weights[j][k, l] = parent2.Weights[j][k, l];
-                            child2.Weights[j][k, l] = parent1.Weights[j][k, l];
-                        }
-                    }
-                }
-                */
                 
                 if (Random.Range(0, 2) == 0) {
                     child1.Weights[j] = (float[,])parent1.Weights[j].Clone();
@@ -125,9 +118,11 @@ public class GeneticManager : MonoBehaviour
                     child2.Biases[j] = parent1.Biases[j];
                 }
             }
-            newPpopulation.Add(child1);
-            newPpopulation.Add(child2);
+            children.Add(child1);
+            children.Add(child2);
         }
+        population.AddRange(children);
+        Debug.Log($"Children added: {children.Count} / {population.Count}");
     }
 
     private void MutateArray(float[,] arr) {
@@ -138,76 +133,59 @@ public class GeneticManager : MonoBehaviour
         }
     }
 
+    private NeuralNetwork GetWeightMutant(NeuralNetwork nnet, int weightIndex) {
+        var mutant = nnet.Clone();
+        MutateArray(mutant.Weights[weightIndex]);
+        //Debug.Log($"Weights[{weightIndex}] mutant created.");
+        return mutant;
+    }
+
+    private NeuralNetwork GetBiasMutant(NeuralNetwork nnet, int biasIndex) {
+        var mutant = nnet.Clone();
+        mutant.Biases[biasIndex] = Mathf.Clamp(nnet.Biases[biasIndex] + Random.Range(-1f, 1f), -1f, 1f);
+        //Debug.Log($"Biases[{biasIndex}] mutant created.");
+        return mutant;
+    }
+
     private void Mutate(List<NeuralNetwork> population) {
         var mutants = new List<NeuralNetwork>();
         foreach(var nnet in population) {
-            for(var i = 0; i < nnet.Weights.Count && population.Count < PopulationSize; i++) {
-                if(Random.Range(0f, 1f) < mutationChance) {
-                    var mutant = new NeuralNetwork(InputLayerNeuronCount, OutputLayerNeuronCount, HiddenLayersNeuronCount, HiddenLayersCount, true);
-                    for (var j = 0; j < nnet.Weights.Count; j++) {
-                        //Debug.Log($"Weights: {parent1.Weights.Count} / {child1.Weights.Count}");
-                        mutant.Weights[j] = (float[,])nnet.Weights[j].Clone();
+            for (var i = 0; i < nnet.Weights.Count && population.Count + mutants.Count < PopulationSize; i++) {
+                if (Random.Range(0f, 1f) < MutationChance) {
+                    if (Random.Range(0, 2) == 0) {
+                        mutants.Add(GetWeightMutant(nnet, i));
+                    } else {
+                        mutants.Add(GetBiasMutant(nnet, i));
                     }
-                    for (var j = 0; j < nnet.Biases.Length; j++) {
-                        mutant.Biases[j] = nnet.Biases[j];
-                    }
-                    MutateArray(mutant.Weights[i]);
-                    mutants.Add(mutant);
-                }
-            }
-            for(var i = 0; i < nnet.Biases.Length && population.Count < PopulationSize; i++) {
-                if (Random.Range(0f, 1f) < mutationChance) {
-                    var mutant = new NeuralNetwork(InputLayerNeuronCount, OutputLayerNeuronCount, HiddenLayersNeuronCount, HiddenLayersCount, true);
-                    for (var j = 0; j < nnet.Weights.Count; j++) {
-                        //Debug.Log($"Weights: {parent1.Weights.Count} / {child1.Weights.Count}");
-                        mutant.Weights[j] = (float[,])nnet.Weights[j].Clone();
-                    }
-                    for (var j = 0; j < nnet.Biases.Length; j++) {
-                        mutant.Biases[j] = nnet.Biases[j];
-                    }
-                    mutant.Biases[i] = Mathf.Clamp(nnet.Biases[i] + Random.Range(-1f, 1f), -1f, 1f);
-                    mutants.Add(mutant);
                 }
             }
         }
         population.AddRange(mutants);
-        //Debug.Log($"{mutants.Count} / {population.Count} mutants added.");
+        Debug.Log($"{mutants.Count} / {population.Count} mutants added.");
     }
 
     private void RePopulate() {
-        population = population.OrderByDescending(n => n.Fitness).ToList();
-        var newPopulation = population.GetRange(0, bestAgentSelection).ToList();
-        var topFitness = "";
-        foreach(var nnet in newPopulation) {
-            topFitness += nnet.Fitness + " / ";
-        }
-        TopFitness = topFitness;
+        Population = Population.OrderByDescending(n => n.Fitness).ToList();
+        var newPopulation = Population.GetRange(0, BestAgents).ToList();
+        TopFitnesses = newPopulation.Select(n => n.Fitness).ToList();
         if (!newPopulation.Any(n => n.Fitness < TargetFitness)) {
             Debug.LogWarning($"Training complete!");
-            OnTrainingComplete?.Invoke(population);
+            OnTrainingComplete?.Invoke(this);
         }
         currentGenome = 0;
-        genePool.Clear();
+        GenePool.Clear();
         currentGeneration++;
-        //avoid plato?
-        /*
-        if (1f - (newPopulation.LastOrDefault().Fitness / newPopulation.FirstOrDefault().Fitness) < 0.05f && currentGeneration % 10 == 0) {
-            Debug.LogWarning($"Purging population.");
-            newPopulation = newPopulation.GetRange(0, 1).ToList();
-        }
-        */
-        //
         AddNetworksToGenePool(newPopulation);
         foreach (var nnet in newPopulation) {
             nnet.Fitness = 0;
         }
         
-        var worstAgents = population.GetRange(PopulationSize - worstAgentSelection, worstAgentSelection);
+        //var worstAgents = Population.GetRange(Population.Count - WorstAgentSelection, WorstAgentSelection);
         //AddNetworksToGenePool(worstAgents);
         Crossover(newPopulation);
         Mutate(newPopulation);
         GrowPopulation(newPopulation, PopulationSize);
-        population = newPopulation;
-        
+        Population = newPopulation;
+        OnRepopulated?.Invoke(this);
     }
 }

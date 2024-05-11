@@ -70,33 +70,74 @@ public static class NeuralNetworkSerialization
         return unwrap;
     }
 
-    public static void SaveToJson(List<NeuralNetwork> population) {
+    public static void SaveToJson(List<NeuralNetwork> population, int generation) {
         if (population == null) {
             Debug.LogError("Empty population for serialization.");
             return;
         }
-        var avgFitness = population.Average(n => n.Fitness);
+        //var avgFitness = population.Average(n => n.Fitness);
         var wrap = new CollectionWrapper<NeuralNetworkWrapper>(population.Select(n => new NeuralNetworkWrapper(n)));
-        var filePath = $"population_{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}_{avgFitness.ToString("0")}.nnet";
-        File.WriteAllText(filePath, JsonUtility.ToJson(wrap, true));
+        //var filePath = $"population_{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}_{avgFitness.ToString("0")}.nnet";
+        var filePath = $"p_{DateTime.Now.ToString("yyyy-MM-dd-HH-mm")}_{generation:0}_{population.FirstOrDefault().Fitness:0}.nnet";
+        File.WriteAllText(filePath, JsonUtility.ToJson((generation, wrap), true));
         Debug.Log($"Saved neural network population: {filePath}");
     }
 
+    public static void SaveToJson(List<NeuralNetwork> population) => SaveToJson(population, 1);
+
     public static void SaveToJson(NeuralNetwork nnet) => SaveToJson(new List<NeuralNetwork>() { nnet });
 
-    public static List<NeuralNetwork> LoadFromJson(string filePath) {
+    public static (int, List<NeuralNetwork>) LoadFromJson(string filePath) {
         if(!File.Exists(filePath)) {
             Debug.LogError($"Invalid file path: {filePath}");
-            return null;
+            return (0, null);
         }
 
-        var wrap = JsonUtility.FromJson<CollectionWrapper<NeuralNetworkWrapper>>(File.ReadAllText(filePath));
-        var unwrap = wrap.list.Select(n => n.Unwrap()).ToList();
-        Debug.Log($"Loaded neural network population: {filePath}");
-        return unwrap;
+        var wrap = JsonUtility.FromJson<(int, CollectionWrapper<NeuralNetworkWrapper>)>(File.ReadAllText(filePath));
+        var unwrap = wrap.Item2?.list?.Select(n => n.Unwrap()).ToList();
+        if (wrap.Item2 != null) {
+            Debug.Log($"Loaded neural network population: {filePath}");
+        } else {
+            Debug.LogError($"Unable to load neural network population: {filePath}");
+        }
+        return (wrap.Item1, unwrap);
     }
 
     public static string[] GetSavedPopulations() {
         return Directory.GetFiles(".", "*.nnet");
+    }
+
+    public static string GetHiddenLayersString(NeuralNetwork nnet) {
+        var str = "";
+        var neurons = nnet.HiddenLayers.FirstOrDefault().Length;
+        var layers = 0;
+        foreach (var layer in nnet.HiddenLayers) {
+            if (neurons == layer.Length) {
+                layers++;
+            } else {
+                str += $"{neurons}*{layers};";
+                neurons = layer.Length;
+                layers = 1;
+            }
+        }
+        str += $"{neurons}*{layers};";
+        return str;
+    }
+
+    public static  List<(int, int)> ParseHiddenLayersString(string str) {
+        if (string.IsNullOrEmpty(str)) {
+            return null;
+        }
+        var layers = str
+            .Split(';')
+            .Where(l => !string.IsNullOrEmpty(l))
+            .Select(l => l.Split('*')
+            .Where(v => !string.IsNullOrEmpty(l))
+            .Select(v => int.Parse(v)));
+        if (layers.Any(l => l.Count() != 2 || l.Any(v => v < 1))) {
+            Debug.LogError($"Unable to parse hidden layers structure: {str}");
+            return null;
+        }
+        return layers.Select(l => (l.FirstOrDefault(), l.LastOrDefault())).ToList();
     }
 }
