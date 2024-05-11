@@ -3764,9 +3764,21 @@ PrefabInstance:
       propertyPath: m_Mass
       value: 50
       objectReference: {fileID: 0}
+    - target: {fileID: 946886157781056370, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1437409423402175857, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2933276405270093233, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
       propertyPath: m_SuspensionSpring.damper
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3835795829432930904, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5113601333402566771, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
       propertyPath: BaseBreakForce
@@ -3775,6 +3787,10 @@ PrefabInstance:
     - target: {fileID: 5113601333402566771, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
       propertyPath: BaseAcceleration
       value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 5319031170013970761, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7080850194430404385, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
       propertyPath: BaseBreakForce

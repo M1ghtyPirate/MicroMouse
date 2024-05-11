@@ -923,7 +923,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8347751975029389516}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: d9c02632e073ab9429a0ebf385a5e8d8, type: 2}
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -936,7 +936,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8347751975029389516}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: d9c02632e073ab9429a0ebf385a5e8d8, type: 2}
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -949,7 +949,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8347751975029389516}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: d9c02632e073ab9429a0ebf385a5e8d8, type: 2}
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -972,8 +972,8 @@ MonoBehaviour:
   SensorCenter: {fileID: 5545930976193568402}
   SensorRight: {fileID: 8770182625375315579}
   SensorLeft: {fileID: 7361525360151725775}
-  UseManualControl: 0
   IsActive: 0
+  CurrentControlMode: 0
 --- !u!1 &8648268445315195404
 GameObject:
   m_ObjectHideFlags: 0
