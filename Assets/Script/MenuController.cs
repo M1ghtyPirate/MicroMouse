@@ -10,11 +10,10 @@ public class MenuController : MonoBehaviour
 {
     [SerializeField]
     private GameObject Mouse;
-    private MouseController MouseController { get => Mouse.GetComponent<MouseController>(); }
-    [SerializeField]
+    private MouseController MouseController { get => Mouse.GetComponent<MouseController>(); }    
     private GeneticManager Manager;
-    [SerializeField]
-    private GameObject MousePrefab;
+    //[SerializeField]
+    //private GameObject MousePrefab;
 
     private Vector3 InitialMousePosition;
     private Quaternion InitialMouseRotation;
@@ -69,6 +68,8 @@ public class MenuController : MonoBehaviour
 
         UpdateSavedPopulations();
         UpdateSavedPopulationsAccessibility();
+        Manager = new GeneticManager();
+        Manager.MouseController = MouseController;
         Manager.OnTrainingComplete += (GeneticManager m) => NeuralNetworkSerialization.SaveToJson(m.Population, m.currentGeneration);
         Manager.OnTrainingComplete += (GeneticManager m) => ResetMouse();
         Manager.OnNextAgentStart += (GeneticManager m) => UpdateGenerationText(m.currentGeneration, m.currentGenome, m.PopulationSize);
@@ -118,6 +119,8 @@ public class MenuController : MonoBehaviour
     private void SetTargetCellText(int x, int y) {
         TargetCellXInput.text = x + "";
         TargetCellYInput.text = y + "";
+        TargetCellXInput.caretPosition = 0;
+        TargetCellYInput.caretPosition = 0;
         MouseController.InitializeMazePaths(new Point(x, y));
     }
 
@@ -133,6 +136,15 @@ public class MenuController : MonoBehaviour
 
     public void UpdateTargetCell() {
         GetTargetCell();
+    }
+
+    public void TargetCellEdit() {
+        if (!string.IsNullOrWhiteSpace(TargetCellXInput.text) && TargetCellXInput.text.Length > 2) {
+            TargetCellXInput.text = TargetCellXInput.text.Substring(0, 2);
+        }
+        if (!string.IsNullOrWhiteSpace(TargetCellYInput.text) && TargetCellYInput.text.Length > 2) {
+            TargetCellYInput.text = TargetCellYInput.text.Substring(0, 2);
+        }
     }
 
     public static void Quit() {

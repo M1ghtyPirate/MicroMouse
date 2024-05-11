@@ -5,19 +5,14 @@ using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class GeneticManager : MonoBehaviour
+public class GeneticManager
 {
-    [SerializeField]
     public bool IsActive;
-    [SerializeField]
     public MouseController MouseController;
 
-    [Header("Controls")]
     public int PopulationSize = 85;
-    [Range(0.0f, 1.0f)]
     public float MutationChance;
 
-    [Header("Crossover Controls")]
     public int BestAgents = 20;
     public int WorstAgents = 6;
     public int Children = 20;
@@ -26,7 +21,6 @@ public class GeneticManager : MonoBehaviour
 
     public List<NeuralNetwork> Population;
 
-    [Header("Public View")]
     public int currentGeneration;
     public int currentGenome;
 
@@ -56,7 +50,6 @@ public class GeneticManager : MonoBehaviour
 
     private void GrowPopulation(List<NeuralNetwork> population, int targetSize) {
         while(population.Count < targetSize) {
-            //var nnet = new NeuralNetwork(InputLayerNeuronCount, OutputLayerNeuronCount, HiddenLayersNeuronCount, HiddenLayersCount, true);
             var nnet = new NeuralNetwork(InputLayerNeuronCount, OutputLayerNeuronCount, HiddenLayerStructure, true);
             population.Add(nnet);
         }
@@ -74,7 +67,6 @@ public class GeneticManager : MonoBehaviour
 
     private void AddNetworksToGenePool(IEnumerable<NeuralNetwork> nnetworks) {
         foreach (var nnet in nnetworks) {
-            //var genePoolEntries = Mathf.RoundToInt(nnet.Fitness * 10);
             var genePoolEntries = Mathf.Ceil(nnet.Fitness);
             for (var j = 0; j < genePoolEntries; j++) {
                 GenePool.Add(nnet);

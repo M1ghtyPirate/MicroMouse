@@ -679,6 +679,10 @@ public class MouseController : MonoBehaviour {
 
         foreach (var marker in PathMarkers) {
             //marker.SetActive(false);
+            if (marker == null) {
+                Debug.LogError("Matker object not found");
+                return;
+            }
             marker.GetComponent<MeshRenderer>().enabled = false;
         }
 

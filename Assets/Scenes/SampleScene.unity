@@ -473,8 +473,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Mouse: {fileID: 157028452}
-  Manager: {fileID: 1890694642}
-  MousePrefab: {fileID: 8347751975029389516, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
 --- !u!1 &124352271
 GameObject:
   m_ObjectHideFlags: 0
@@ -705,17 +703,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 8347751975029389516, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
   m_PrefabInstance: {fileID: 933683850}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &157028453 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 244209969277291786, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
-  m_PrefabInstance: {fileID: 933683850}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 157028452}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bac00fd118747cf49b85861f26bfaa8b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &163503977
 GameObject:
   m_ObjectHideFlags: 0
@@ -2858,7 +2845,19 @@ MonoBehaviour:
       m_Calls: []
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 100172138}
+        m_TargetAssemblyTypeName: MenuController, Assembly-CSharp
+        m_MethodName: TargetCellEdit
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   m_OnTouchScreenKeyboardStatusChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -6505,7 +6504,19 @@ MonoBehaviour:
       m_Calls: []
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 100172138}
+        m_TargetAssemblyTypeName: MenuController, Assembly-CSharp
+        m_MethodName: TargetCellEdit
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   m_OnTouchScreenKeyboardStatusChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -9336,63 +9347,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1882371803}
   m_CullTransparentMesh: 1
---- !u!1 &1890694639
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1890694641}
-  - component: {fileID: 1890694642}
-  m_Layer: 0
-  m_Name: GeneticManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1890694641
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1890694639}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.23516953, y: -0.8547882, z: -0.7822578}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 10
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1890694642
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1890694639}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cf54d692150fe0c419b7194bcf846396, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  IsActive: 0
-  MouseController: {fileID: 157028453}
-  PopulationSize: 85
-  MutationChance: 0.055
-  BestAgents: 20
-  WorstAgents: 6
-  Children: 20
-  currentGeneration: 0
-  currentGenome: 0
-  InputLayerNeuronCount: 3
-  OutputLayerNeuronCount: 2
-  TopFitnesses: []
-  TargetFitness: 0
 --- !u!1 &1910330229
 GameObject:
   m_ObjectHideFlags: 0

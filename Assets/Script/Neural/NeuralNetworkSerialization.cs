@@ -75,9 +75,7 @@ public static class NeuralNetworkSerialization
             Debug.LogError("Empty population for serialization.");
             return;
         }
-        //var avgFitness = population.Average(n => n.Fitness);
         var wrap = new CollectionWrapper<NeuralNetworkWrapper>(population.Select(n => new NeuralNetworkWrapper(n)));
-        //var filePath = $"population_{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}_{avgFitness.ToString("0")}.nnet";
         var filePath = $"p_{DateTime.Now.ToString("yyyy-MM-dd-HH-mm")}_{generation:0}_{population.FirstOrDefault().Fitness:0}.nnet";
         File.WriteAllText(filePath, JsonUtility.ToJson((generation, wrap), true));
         Debug.Log($"Saved neural network population: {filePath}");
