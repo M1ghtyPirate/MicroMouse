@@ -23,16 +23,17 @@ public class NeuralNetwork
         HiddenLayers = new List<float[]>();
     }
 
-    public NeuralNetwork(int inputLayerNeuronCount, int outputLayerNeuronCount, int hiddenLayersNeuronCount, int hiddenLayersCount, bool initialize = false) 
-        : this(inputLayerNeuronCount, outputLayerNeuronCount, new List<(int, int)> { (hiddenLayersNeuronCount, hiddenLayersCount) }, initialize) {
-    }
-
-    public NeuralNetwork(int inputLayerNeuronCount, int outputLayerNeuronCount, IEnumerable<(int, int)> layersStructure, bool initialize = false) : this(inputLayerNeuronCount, outputLayerNeuronCount) {
+    public NeuralNetwork(int inputLayerNeuronCount, int outputLayerNeuronCount, IEnumerable<(int, int)> layersStructure, bool initialize = false) 
+        : this(inputLayerNeuronCount, outputLayerNeuronCount) {
         AddHiddenLayers(layersStructure);
         if (initialize) {
             InitializeWeights();
             InitializeBiases();
         }
+    }
+
+    public NeuralNetwork(int inputLayerNeuronCount, int outputLayerNeuronCount, int hiddenLayersNeuronCount, int hiddenLayersCount, bool initialize = false) 
+        : this(inputLayerNeuronCount, outputLayerNeuronCount, new List<(int, int)> { (hiddenLayersNeuronCount, hiddenLayersCount) }, initialize) {
     }
 
     public void AddHiddenLayers(int neuronCount, int layerCount) {
@@ -55,6 +56,23 @@ public class NeuralNetwork
         }
     }
 
+    public List<(int, int)> GetHiddenLayersStructure() {
+        var structure = new List<(int, int)>();
+        var neurons = HiddenLayers.FirstOrDefault().Length;
+        var layers = 0;
+        foreach (var layer in HiddenLayers) {
+            if (neurons == layer.Length) {
+                layers++;
+            } else {
+                structure.Add((neurons, layers));
+                neurons = layer.Length;
+                layers = 1;
+            }
+        }
+        structure.Add((neurons, layers));
+        return structure;
+    }
+
     public bool InitializeWeights(bool randomizeValues = true) {
         if(!HiddenLayers.Any()) {
             Debug.Log($"No hidden layers were added.");
@@ -72,7 +90,7 @@ public class NeuralNetwork
                 rows = HiddenLayers[i - 1].Length;
                 cols = OutputLayer.Length;
             } else {
-                rows = cols = HiddenLayers[i - 1].Length;
+                rows = HiddenLayers[i - 1].Length;
                 cols = HiddenLayers[i].Length;
             }
             Weights.Add(new float[rows, cols]);
@@ -138,23 +156,6 @@ public class NeuralNetwork
                 outputVector[j] = resultVector[j];
             }
         }
-    }
-
-    public List<(int, int)> GetHiddenLayersStructure() {
-        var structure = new List<(int, int)>();
-        var neurons = HiddenLayers.FirstOrDefault().Length;
-        var layers = 0;
-        foreach (var layer in HiddenLayers) {
-            if (neurons == layer.Length) {
-                layers++;
-            } else {
-                structure.Add((neurons, layers));
-                neurons = layer.Length;
-                layers = 1;
-            }
-        }
-        structure.Add((neurons, layers));
-        return structure;
     }
 
     public NeuralNetwork Clone(bool cloneCurrentValues = false) {

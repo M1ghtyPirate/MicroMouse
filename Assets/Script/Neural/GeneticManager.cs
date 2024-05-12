@@ -114,7 +114,7 @@ public class GeneticManager
             children.Add(child2);
         }
         population.AddRange(children);
-        Debug.Log($"Children added: {children.Count} / {population.Count}");
+        //Debug.Log($"Children added: {children.Count} / {population.Count}");
     }
 
     private void MutateArray(float[,] arr) {
@@ -153,7 +153,7 @@ public class GeneticManager
             }
         }
         population.AddRange(mutants);
-        Debug.Log($"{mutants.Count} / {population.Count} mutants added.");
+        //Debug.Log($"{mutants.Count} / {population.Count} mutants added.");
     }
 
     private void RePopulate() {

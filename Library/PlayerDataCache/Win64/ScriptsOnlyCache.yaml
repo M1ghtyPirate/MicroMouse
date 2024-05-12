@@ -8,7 +8,9 @@ ScriptsOnlyBuild:
     Unity.Rider.Editor.dll:
     - Packages.Rider.Editor.UnitTesting.CallbackData
     Unity.TextMeshPro.dll:
+    - TMPro.TMP_Dropdown
     - TMPro.TMP_FontAsset
+    - TMPro.TMP_InputField
     - TMPro.TMP_Settings
     - TMPro.TMP_SpriteAsset
     - TMPro.TMP_StyleSheet
@@ -24,6 +26,12 @@ ScriptsOnlyBuild:
     - UnityEngine.UI.CanvasScaler
     - UnityEngine.UI.GraphicRaycaster
     - UnityEngine.UI.Image
+    - UnityEngine.UI.LayoutElement
+    - UnityEngine.UI.Mask
+    - UnityEngine.UI.RectMask2D
+    - UnityEngine.UI.ScrollRect
+    - UnityEngine.UI.Scrollbar
+    - UnityEngine.UI.Slider
     - UnityEngine.UI.Text
     - UnityEngine.UI.Toggle
   serializedClasses:
@@ -32,11 +40,19 @@ ScriptsOnlyBuild:
     - TMPro.FontAssetCreationSettings
     - TMPro.KerningTable
     - TMPro.TMP_Character
+    - TMPro.TMP_Dropdown/DropdownEvent
+    - TMPro.TMP_Dropdown/OptionData
+    - TMPro.TMP_Dropdown/OptionDataList
     - TMPro.TMP_FontFeatureTable
     - TMPro.TMP_FontWeightPair
     - TMPro.TMP_GlyphAdjustmentRecord
     - TMPro.TMP_GlyphPairAdjustmentRecord
     - TMPro.TMP_GlyphValueRecord
+    - TMPro.TMP_InputField/OnChangeEvent
+    - TMPro.TMP_InputField/SelectionEvent
+    - TMPro.TMP_InputField/SubmitEvent
+    - TMPro.TMP_InputField/TextSelectionEvent
+    - TMPro.TMP_InputField/TouchScreenKeyboardEvent
     - TMPro.TMP_Sprite
     - TMPro.TMP_SpriteCharacter
     - TMPro.TMP_SpriteGlyph
@@ -58,6 +74,9 @@ ScriptsOnlyBuild:
     - UnityEngine.UI.FontData
     - UnityEngine.UI.MaskableGraphic/CullStateChangedEvent
     - UnityEngine.UI.Navigation
+    - UnityEngine.UI.ScrollRect/ScrollRectEvent
+    - UnityEngine.UI.Scrollbar/ScrollEvent
+    - UnityEngine.UI.Slider/SliderEvent
     - UnityEngine.UI.SpriteState
     - UnityEngine.UI.Toggle/ToggleEvent
   methodsToPreserve:
@@ -66,10 +85,19 @@ ScriptsOnlyBuild:
     methodName: SetTimeScale
   - assembly: Assembly-CSharp
     fullTypeName: MenuController
+    methodName: UpdateTargetCell
+  - assembly: Assembly-CSharp
+    fullTypeName: MenuController
+    methodName: SavePopulation
+  - assembly: Assembly-CSharp
+    fullTypeName: MenuController
     methodName: ActivateMouse
   - assembly: Assembly-CSharp
     fullTypeName: MenuController
     methodName: SwitchCamera
+  - assembly: Assembly-CSharp
+    fullTypeName: MenuController
+    methodName: UpdateTargetCell
   - assembly: Assembly-CSharp
     fullTypeName: MenuController
     methodName: SwitchCamera
@@ -81,7 +109,16 @@ ScriptsOnlyBuild:
     methodName: ResetMouse
   - assembly: Assembly-CSharp
     fullTypeName: MenuController
+    methodName: UpdateAgentText
+  - assembly: Assembly-CSharp
+    fullTypeName: MenuController
     methodName: SetTimeScale
+  - assembly: Assembly-CSharp
+    fullTypeName: MenuController
+    methodName: SwitchControlMode
+  - assembly: Assembly-CSharp
+    fullTypeName: MenuController
+    methodName: UpdateMutationText
   - assembly: Assembly-CSharp
     fullTypeName: MenuController
     methodName: SetTimeScale
@@ -93,7 +130,7 @@ ScriptsOnlyBuild:
     methodName: Quit
   - assembly: Assembly-CSharp
     fullTypeName: MenuController
-    methodName: ToggleManualControl
+    methodName: UpdateAgentSelection
   - assembly: Assembly-CSharp
     fullTypeName: MenuController
     methodName: SetTimeScale
@@ -137,40 +174,58 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 1592}
     - Class: 114
+      Script: {instanceID: 1724}
+    - Class: 114
       Script: {instanceID: 2224}
     - Class: 114
-      Script: {instanceID: 2660}
+      Script: {instanceID: 2662}
     - Class: 114
-      Script: {instanceID: 2886}
+      Script: {instanceID: 2674}
     - Class: 114
-      Script: {instanceID: 3190}
+      Script: {instanceID: 2888}
     - Class: 114
-      Script: {instanceID: 3600}
+      Script: {instanceID: 3194}
     - Class: 114
-      Script: {instanceID: 4262}
+      Script: {instanceID: 3604}
     - Class: 114
-      Script: {instanceID: 4534}
+      Script: {instanceID: 4018}
     - Class: 114
-      Script: {instanceID: 5046}
+      Script: {instanceID: 4252}
     - Class: 114
-      Script: {instanceID: 5166}
+      Script: {instanceID: 4266}
     - Class: 114
-      Script: {instanceID: 5314}
+      Script: {instanceID: 4538}
     - Class: 114
-      Script: {instanceID: 5592}
+      Script: {instanceID: 5050}
     - Class: 114
-      Script: {instanceID: 5932}
+      Script: {instanceID: 5100}
     - Class: 114
-      Script: {instanceID: 6084}
+      Script: {instanceID: 5170}
     - Class: 114
-      Script: {instanceID: 6432}
+      Script: {instanceID: 5228}
     - Class: 114
-      Script: {instanceID: 6464}
+      Script: {instanceID: 5318}
     - Class: 114
-      Script: {instanceID: 6554}
+      Script: {instanceID: 5596}
+    - Class: 114
+      Script: {instanceID: 5938}
+    - Class: 114
+      Script: {instanceID: 6090}
+    - Class: 114
+      Script: {instanceID: 6438}
+    - Class: 114
+      Script: {instanceID: 6450}
+    - Class: 114
+      Script: {instanceID: 6470}
+    - Class: 114
+      Script: {instanceID: 6560}
+    - Class: 114
+      Script: {instanceID: 7566}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
+      Script: {instanceID: 0}
+    - Class: 134
       Script: {instanceID: 0}
     - Class: 146
       Script: {instanceID: 0}
@@ -459,7 +514,7 @@ ScriptsOnlyBuild:
     className: BaseInput
   - hash:
       serializedVersion: 2
-      Hash: d8614194f9f611498f929c7961526302
+      Hash: 0e2c593128c619b7790d5e24dd5e8d39
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: MenuController
@@ -789,7 +844,7 @@ ScriptsOnlyBuild:
     className: BeforeAfterTestCommandState
   - hash:
       serializedVersion: 2
-      Hash: 6221b24de13f9c441d0faa424480d467
+      Hash: 22fb569e7f704e81dcd4d74ae4a7efb3
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: MouseController
@@ -988,4 +1043,4 @@ ScriptsOnlyBuild:
   platform: 19
   scenePathNames:
   - Assets/Scenes/SampleScene.unity
-  playerPath: E:/Misc/0Stuff/Unity/Builds/MicroMouse/MicroMouse.exe
+  playerPath: E:/Misc/0Stuff/Unity/Builds/MicroMouse_v2/MicroMouse.exe

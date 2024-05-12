@@ -15,8 +15,8 @@ public class MenuController : MonoBehaviour
     //[SerializeField]
     //private GameObject MousePrefab;
 
-    private Vector3 InitialMousePosition;
-    private Quaternion InitialMouseRotation;
+    //private Vector3 InitialMousePosition;
+    //private Quaternion InitialMouseRotation;
 
     private Button ActivateButton;
     private Toggle MarkersVisibilityToggle;
@@ -32,16 +32,19 @@ public class MenuController : MonoBehaviour
     private TMP_InputField HiddenLayers;
     private Slider MutationSelectionSlider;
     private Text MutationText;
-    private TMP_InputField TargetCellXInput;
-    private TMP_InputField TargetCellYInput;
+    private Slider TargetCellXSlider;
+    private Text TargetCellXText;
+    private Slider TargetCellYSlider;
+    private Text TargetCellYText;
 
     private List<string> SavedPopulations;
 
     private void OnEnable() {
-        InitialMousePosition = Mouse.transform.position;
-        InitialMouseRotation = Mouse.transform.rotation;
+        //InitialMousePosition = Mouse.transform.position;
+        //InitialMouseRotation = Mouse.transform.rotation;
         MainCamera = GameObject.Find("Main Camera");
         SwitchCamera("Main Camera");
+
         ActivateButton = gameObject.GetComponentsInChildren<Button>().FirstOrDefault(b => b.name == "Activate");
         MarkersVisibilityToggle = gameObject.GetComponentsInChildren<Toggle>().FirstOrDefault(b => b.name == "MarkersVisibility");
         ControlModeDropdown = gameObject.GetComponentsInChildren<TMP_Dropdown>().FirstOrDefault(b => b.name == "ControlMode");
@@ -49,25 +52,28 @@ public class MenuController : MonoBehaviour
         SaveButton = gameObject.GetComponentsInChildren<Button>().FirstOrDefault(b => b.name == "Save");
         AgentSelectionSlider = gameObject.GetComponentsInChildren<Slider>().FirstOrDefault(b => b.name == "AgentSelection");
         AgentText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "Agent");
-        SaveButton.interactable = false;
         GenerationText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "Generation");
         FitnessText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "Fitness");
         HiddenLayers = gameObject.GetComponentsInChildren<TMP_InputField>().FirstOrDefault(b => b.name == "HiddenLayers");
         MutationSelectionSlider = gameObject.GetComponentsInChildren<Slider>().FirstOrDefault(b => b.name == "MutationSelection");
         MutationText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "Mutation");
-        TargetCellXInput = gameObject.GetComponentsInChildren<TMP_InputField>().FirstOrDefault(b => b.name == "TargetCellX");
-        TargetCellYInput = gameObject.GetComponentsInChildren<TMP_InputField>().FirstOrDefault(b => b.name == "TargetCellY");
+        TargetCellXSlider = gameObject.GetComponentsInChildren<Slider>().FirstOrDefault(b => b.name == "TargetCellXSelection");
+        TargetCellXText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "TargetCellX");
+        TargetCellYSlider = gameObject.GetComponentsInChildren<Slider>().FirstOrDefault(b => b.name == "TargetCellYSelection");
+        TargetCellYText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "TargetCellY");
+
+        SaveButton.interactable = false;
         UpdateAgentSelection();
         UpdateGenerationText();
         UpdateFitnessText();
         UpdateAgentText();
         UpdateLayersParamsAccessibility();
         UpdateMutationSelectionAccessibility();
-        ResetTargetCellText();
+        ResetTargetCell();
         UpdateTargetCellParamsAcessibility();
-
         UpdateSavedPopulations();
         UpdateSavedPopulationsAccessibility();
+
         Manager = new GeneticManager();
         Manager.MouseController = MouseController;
         Manager.OnTrainingComplete += (GeneticManager m) => NeuralNetworkSerialization.SaveToJson(m.Population, m.currentGeneration);
@@ -94,15 +100,7 @@ public class MenuController : MonoBehaviour
         FitnessText.text = string.Join(" / ", fitnesses?.Select(f => f.ToString("0")) ?? new []{ "" });
     }
 
-    public void UpdateAgentText() {
-        AgentText.text = (int)AgentSelectionSlider.value + 1 + "";
-    }
-
-    public void UpdateMutationText() {
-        MutationText.text = $"{MutationSelectionSlider.value / 2:0.0}%";
-    }
-
-    public void ResetTargetCellText() {
+    public void ResetTargetCell() {
         int x;
         int y;
         if (MouseController.CurrentControlMode == Enums.ControlMode.NeuralTraining) {
@@ -113,42 +111,53 @@ public class MenuController : MonoBehaviour
             x = 7;
             y = 7;
         }
-        SetTargetCellText(x, y);
-    }
-
-    private void SetTargetCellText(int x, int y) {
-        TargetCellXInput.text = x + "";
-        TargetCellYInput.text = y + "";
-        TargetCellXInput.caretPosition = 0;
-        TargetCellYInput.caretPosition = 0;
-        MouseController.InitializeMazePaths(new Point(x, y));
+        //SetTargetCellText(x, y);
+        TargetCellXSlider.value = x;
+        TargetCellYSlider.value = y;
+        UpdateTargetCell();
     }
 
     private Point GetTargetCell() {
-        if (string.IsNullOrEmpty(TargetCellXInput.text) || string.IsNullOrEmpty(TargetCellYInput.text)) {
-            ResetTargetCellText();
-        }
-        var x = Mathf.Min(int.Parse(TargetCellXInput.text), 15);
-        var y = Mathf.Min(int.Parse(TargetCellYInput.text), 15);
-        SetTargetCellText(x, y);
-        return new Point(x, y);
+        return new Point((int)TargetCellXSlider.value, (int)TargetCellYSlider.value);
     }
 
-    public void UpdateTargetCell() {
-        GetTargetCell();
+    public void UpdateMutationSelectionAccessibility() {
+        MutationSelectionSlider.interactable = !MouseController.IsActive
+            && MouseController.CurrentControlMode == Enums.ControlMode.NeuralTraining;
     }
 
-    public void TargetCellEdit() {
-        if (!string.IsNullOrWhiteSpace(TargetCellXInput.text) && TargetCellXInput.text.Length > 2) {
-            TargetCellXInput.text = TargetCellXInput.text.Substring(0, 2);
-        }
-        if (!string.IsNullOrWhiteSpace(TargetCellYInput.text) && TargetCellYInput.text.Length > 2) {
-            TargetCellYInput.text = TargetCellYInput.text.Substring(0, 2);
-        }
+    public void UpdateLayersParamsAccessibility() {
+        HiddenLayers.interactable = !MouseController.IsActive
+            && MouseController.CurrentControlMode == Enums.ControlMode.NeuralTraining
+            && SavedPopulationsDropdown.value == 0;
     }
 
-    public static void Quit() {
-        Application.Quit();
+    public void UpdateTargetCellParamsAcessibility() {
+        TargetCellYSlider.interactable = TargetCellYSlider.interactable = !MouseController.IsActive
+            && MouseController.CurrentControlMode != Enums.ControlMode.Manual;
+    }
+
+    #region MainControlEvendHandlers
+
+    public static void SetTimeScale(float scale) {
+        if (scale < 0) {
+            return;
+        }
+
+        Time.timeScale = scale;
+    }
+
+    public void ToggleMarkersVisibility() {
+        MouseController.ShowPathMarkers = MarkersVisibilityToggle.isOn;
+    }
+
+    public void SwitchControlMode() {
+        //Debug.Log($"Current dropdown value: {ControlModeDropdown.value}");
+        MouseController.CurrentControlMode = (Enums.ControlMode)ControlModeDropdown.value;
+        UpdateSavedPopulationsAccessibility();
+        UpdateAgentSelection();
+        ResetTargetCell();
+        UpdateTargetCellParamsAcessibility();
     }
 
     public void ActivateMouse() {
@@ -159,6 +168,7 @@ public class MenuController : MonoBehaviour
         AgentSelectionSlider.interactable = false;
         MouseController.CenterCell = GetTargetCell();
         UpdateTargetCellParamsAcessibility();
+
         if (MouseController.CurrentControlMode == Enums.ControlMode.NeuralTraining || MouseController.CurrentControlMode == Enums.ControlMode.Neural) {
             (int, List<NeuralNetwork>) population = (0, null);
             if (SavedPopulationsDropdown.value != 0) {
@@ -170,7 +180,8 @@ public class MenuController : MonoBehaviour
                 HiddenLayers.text = NeuralNetworkSerialization.GetHiddenLayersString(Manager.Population.FirstOrDefault());
                 SaveButton.interactable = true;
             } else {
-                MouseController.Reset(population.Item2?[(int)AgentSelectionSlider.value] ?? new NeuralNetwork(3, 2, 10, 2));
+                MouseController.Reset(population.Item2?[(int)AgentSelectionSlider.value] ?? new NeuralNetwork(3, 2, 9, 2));
+                UpdateGenerationText(population.Item1, (int)AgentSelectionSlider.value + 1, population.Item2?.Count ?? Manager.PopulationSize);
             }
             UpdateLayersParamsAccessibility();
             UpdateMutationSelectionAccessibility();
@@ -181,14 +192,7 @@ public class MenuController : MonoBehaviour
         }
     }
 
-    public void ToggleMarkersVisibility() {
-        MouseController.ShowPathMarkers = MarkersVisibilityToggle.isOn;
-    }
-
     public void ResetMouse() {
-        var name = Mouse.name;
-        var cameraState = MouseCamera.activeSelf;
-        var controlMode = MouseController.CurrentControlMode;
         MouseController.IsActive = false;
         MouseController.Reset();
         ActivateButton.interactable = true;
@@ -201,16 +205,7 @@ public class MenuController : MonoBehaviour
         UpdateSavedPopulationsAccessibility();
         UpdateTargetCellParamsAcessibility();
         SetTimeScale(1f);
-        UpdateSavedPopulations();
-        GetTargetCell();
-    }
-
-    public static void SetTimeScale (float scale) {
-        if (scale < 0) {
-            return;
-        }
-
-        Time.timeScale = scale;
+        UpdateSavedPopulations();        
     }
 
     public void SwitchCamera(string cameraName) {
@@ -226,19 +221,13 @@ public class MenuController : MonoBehaviour
         }
     }
 
-    public void SwitchControlMode() {
-        //Debug.Log($"Current dropdown value: {ControlModeDropdown.value}");
-        MouseController.CurrentControlMode = (Enums.ControlMode)ControlModeDropdown.value;
-        UpdateSavedPopulationsAccessibility();
-        UpdateAgentSelection();
-        ResetTargetCellText();
-        UpdateTargetCellParamsAcessibility();
+    public static void Quit() {
+        Application.Quit();
     }
 
-    public void SavePopulation() {
-        Manager.TargetFitness = int.MinValue;
-        SaveButton.interactable = false;
-    }
+    #endregion
+
+    #region NeuralControlsEventHandlers
 
     public void UpdateAgentSelection() {
         AgentSelectionSlider.value = 0;
@@ -263,19 +252,26 @@ public class MenuController : MonoBehaviour
         UpdateFitnessText(population.Item2?.GetRange(0, Manager.BestAgents).Select(n => n.Fitness));
     }
 
-    public void UpdateMutationSelectionAccessibility() {
-        MutationSelectionSlider.interactable = !MouseController.IsActive 
-            && MouseController.CurrentControlMode == Enums.ControlMode.NeuralTraining;
+    public void UpdateAgentText() {
+        AgentText.text = (int)AgentSelectionSlider.value + 1 + "";
     }
 
-    public void UpdateLayersParamsAccessibility() {
-        HiddenLayers.interactable = !MouseController.IsActive 
-            && MouseController.CurrentControlMode == Enums.ControlMode.NeuralTraining 
-            && SavedPopulationsDropdown.value == 0;
+    public void UpdateMutationText() {
+        MutationText.text = $"{MutationSelectionSlider.value / 2:0.0}%";
     }
 
-    public void UpdateTargetCellParamsAcessibility() {
-        TargetCellYInput.interactable = TargetCellXInput.interactable = !MouseController.IsActive
-            && MouseController.CurrentControlMode != Enums.ControlMode.Manual;
+    public void UpdateTargetCell() {
+        var x = (int)TargetCellXSlider.value;
+        var y = (int)TargetCellYSlider.value;
+        TargetCellXText.text = (int)TargetCellXSlider.value + 1 + "";
+        TargetCellYText.text = (int)TargetCellYSlider.value + 1 + "";
+        MouseController.InitializeMazePaths(new Point(x, y));
     }
+
+    public void SavePopulation() {
+        Manager.TargetFitness = int.MinValue;
+        SaveButton.interactable = false;
+    }
+
+    #endregion
 }
