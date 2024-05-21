@@ -20,18 +20,12 @@ public class MouseController : MonoBehaviour {
     SensorController SensorRight;
     [SerializeField]
     SensorController SensorLeft;
-    private bool _ShowPathMarkers;
-    [SerializeField]
-    public bool ShowPathMarkers { get => _ShowPathMarkers; set { PathMarkersObject?.SetActive(value); _ShowPathMarkers = value; } }
     [SerializeField]
     public bool IsActive;
 
     private float AccelerationMultiplier = 0f;
     private float TurnMultiplier = 0f;
     private float BreakMultiplier = 0f;
-
-    private GameObject PathMarkersObject;
-    private GameObject[,] PathMarkers;
 
     private bool IsTurning;
     private float TargetRotation = 0f;
@@ -66,14 +60,14 @@ public class MouseController : MonoBehaviour {
         }
     }
 
-    private float TargetDistance { get => Vector3.Distance(gameObject.transform.position, TargetPosition); }
+    private float TargetDistance { get => Vector3.Distance(new Vector3(gameObject.transform.position.x, 0, gameObject.transform.position.z), new Vector3(TargetPosition.x, 0, TargetPosition.z)); }
     private NeuralNetwork NNet;
     private Vector3 InitialMousePosition;
     private Quaternion InitialMouseRotation;
     private float TravelTime;
     private float LastAbsTargetDirectionDifference;
     private float LastTargetDistance;
-    public Action OnNeuralDeath;
+    public Action<MouseController> OnNeuralDeath;
     public int TargetsReached { get; private set; }
     public Enums.ControlMode CurrentControlMode = Enums.ControlMode.Manual;
 
@@ -81,13 +75,15 @@ public class MouseController : MonoBehaviour {
 
     private int MazeRows = 16;
     private int MazeColumns = 16;
-    private Enums.Direction[,] MazePaths;
-    private int[,] MazeWalls;
-    private Point CurrentCell;
+    public Enums.Direction[,] MazePaths { get; private set; }
+    public int[,] MazeWalls { get; private set; }
+    public Point CurrentCell;
     private Enums.Direction CurrentDirection = Enums.Direction.Forward;
-    private Point StartingCell = new Point(0, 0);
+    public Point StartingCell = new Point(0, 0);
     public Point CenterCell = new Point(7, 7);
     private Point TargetCell;
+    public Action<MouseController, Point> OnPathRecalculated;
+    public Action<MouseController, Point> OnWallsUpdated;
 
     #endregion
 
@@ -102,11 +98,10 @@ public class MouseController : MonoBehaviour {
         TargetCell = new Point(CenterCell.X, CenterCell.Y);
         IsTravelling = false;
 
-        InitializePathMarkers();
         InitializeMazeWalls();
         InitializeMazePaths(TargetCell);
+        Debug.Log($"Heading towards: [{TargetCell.X}, {TargetCell.Y}] - {Time.time}");
 
-        
         InitialMousePosition = gameObject.transform.position;
         InitialMouseRotation = gameObject.transform.rotation;
         TravelTime = 0f;
@@ -271,7 +266,8 @@ public class MouseController : MonoBehaviour {
                 new Point(StartingCell.X, StartingCell.Y) :
                 new Point(CenterCell.X, CenterCell.Y);
             InitializeMazePaths(TargetCell);
-            Debug.Log($"Target reached, heading towards: [{TargetCell.X}, {TargetCell.Y}]");
+            Debug.Log($"Target reached, heading towards: [{TargetCell.X}, {TargetCell.Y}] - {Time.time} / {TargetsReached}");
+            TargetsReached = 0;
             return;
         }
 
@@ -401,9 +397,9 @@ public class MouseController : MonoBehaviour {
     private void NeuralControl() {
         if (CurrentCell.X == StartingCell.X && CurrentCell.Y == StartingCell.Y && CurrentControlMode == Enums.ControlMode.NeuralTraining) {
             MazeWalls[CurrentCell.X, CurrentCell.Y] |= (int)Enums.Direction.Right;
-            UpdateWallCellWallMarkers(new Point(CurrentCell.X, CurrentCell.Y));
+            OnWallsUpdated?.Invoke(this, new Point(CurrentCell.X, CurrentCell.Y));
             MazeWalls[CurrentCell.X + 1, CurrentCell.Y] |= (int)Enums.Direction.Left;
-            UpdateWallCellWallMarkers(new Point(CurrentCell.X + 1, CurrentCell.Y));
+            OnWallsUpdated?.Invoke(this, new Point(CurrentCell.X + 1, CurrentCell.Y));
         } else {
             UpdateCellWalls();
         }
@@ -425,7 +421,10 @@ public class MouseController : MonoBehaviour {
                 new Point(StartingCell.X, StartingCell.Y) :
                 new Point(CenterCell.X, CenterCell.Y);
             InitializeMazePaths(TargetCell);
-            Debug.Log($"Target reached, heading towards: [{TargetCell.X}, {TargetCell.Y}]");
+            Debug.Log($"Target reached, heading towards: [{TargetCell.X}, {TargetCell.Y}] - {Time.time} / {TargetsReached}");
+            if (CurrentControlMode != Enums.ControlMode.NeuralTraining) {
+                TargetsReached = 0;
+            }
             return;
         }
 
@@ -474,7 +473,7 @@ public class MouseController : MonoBehaviour {
         if (CurrentControlMode != Enums.ControlMode.NeuralTraining) {
             return;
         }
-        OnNeuralDeath?.Invoke();
+        OnNeuralDeath?.Invoke(this);
     }
 
     private void TravelNeural() {
@@ -498,6 +497,7 @@ public class MouseController : MonoBehaviour {
 
         var rigidBody = gameObject.GetComponent<Rigidbody>();
         NNet.CalculateLayers(new float[]{ TargetDistance, RelTargetDirectionDifference, rigidBody.velocity.magnitude});
+        //NNet.CalculateLayers(new float[]{ TargetDistance * 10f, RelTargetDirectionDifference / 100f, rigidBody.velocity.magnitude * 10f});
 
         WheelRight.AccelerationMultiplier = 0.4f * NNet.OutputLayer[0];
         WheelLeft.AccelerationMultiplier = 0.4f * NNet.OutputLayer[1];
@@ -555,7 +555,7 @@ public class MouseController : MonoBehaviour {
         }
 
         SetTravelDirection(targetCell, Enums.Direction.None);
-        DrawPath(CurrentCell);
+        OnPathRecalculated?.Invoke(this, CurrentCell);
     }
 
     private void SetTravelDirection(Point cell, Enums.Direction direction) {
@@ -575,14 +575,15 @@ public class MouseController : MonoBehaviour {
         for(var i = 0; i < MazeColumns; i++) {
             MazeWalls[i, 0] |= (int)Enums.Direction.Backward;
             MazeWalls[i, MazeRows - 1] |= (int)Enums.Direction.Forward;
-            UpdateWallCellWallMarkers(new Point(i, 0));
-            UpdateWallCellWallMarkers(new Point(i, MazeRows - 1));
         }
         for (var i = 0; i < MazeRows; i++) {
             MazeWalls[0, i] |= (int)Enums.Direction.Left;
             MazeWalls[MazeColumns - 1, i] |= (int)Enums.Direction.Right;
-            UpdateWallCellWallMarkers(new Point(0, i));
-            UpdateWallCellWallMarkers(new Point(MazeColumns - 1, i));
+        }
+        for (var j = 0; j < MazeRows; j++) {
+            for (var i = 0; i < MazeColumns; i++) {
+                OnWallsUpdated?.Invoke(this, new Point(i, j));
+            }
         }
     }
 
@@ -613,115 +614,23 @@ public class MouseController : MonoBehaviour {
         }
 
         MazeWalls[CurrentCell.X, CurrentCell.Y] |= cellWalls;
-        UpdateWallCellWallMarkers(CurrentCell);
+        OnWallsUpdated?.Invoke(this, CurrentCell);
 
         if ((cellWalls & (int)Enums.Direction.Left) > 0 && IsInbound(new Point(CurrentCell.X - 1, CurrentCell.Y))) {
             MazeWalls[CurrentCell.X - 1, CurrentCell.Y] |= (int)Enums.Direction.Right;
-            UpdateWallCellWallMarkers(new Point(CurrentCell.X - 1, CurrentCell.Y));
+            OnWallsUpdated?.Invoke(this, new Point(CurrentCell.X - 1, CurrentCell.Y));
         }
         if ((cellWalls & (int)Enums.Direction.Right) > 0 && IsInbound(new Point(CurrentCell.X + 1, CurrentCell.Y))) {
             MazeWalls[CurrentCell.X + 1, CurrentCell.Y] |= (int)Enums.Direction.Left;
-            UpdateWallCellWallMarkers(new Point(CurrentCell.X + 1, CurrentCell.Y));
+            OnWallsUpdated?.Invoke(this, new Point(CurrentCell.X + 1, CurrentCell.Y));
         }
         if ((cellWalls & (int)Enums.Direction.Backward) > 0 && IsInbound(new Point(CurrentCell.X, CurrentCell.Y - 1))) {
             MazeWalls[CurrentCell.X, CurrentCell.Y - 1] |= (int)Enums.Direction.Forward;
-            UpdateWallCellWallMarkers(new Point(CurrentCell.X, CurrentCell.Y - 1));
+            OnWallsUpdated?.Invoke(this, new Point(CurrentCell.X, CurrentCell.Y - 1));
         }
         if ((cellWalls & (int)Enums.Direction.Forward) > 0 && IsInbound(new Point(CurrentCell.X, CurrentCell.Y + 1))) {
             MazeWalls[CurrentCell.X, CurrentCell.Y + 1] |= (int)Enums.Direction.Backward;
-            UpdateWallCellWallMarkers(new Point(CurrentCell.X, CurrentCell.Y + 1));
-        }
-    }
-
-    private void InitializePathMarkers() {
-        PathMarkersObject = PathMarkersObject ?? GameObject.Find("PathMarkers");
-        //Debug.Log($"PathMarkers object found: {PathMarkersObject != null}");
-        if(PathMarkersObject == null) {
-            Debug.LogError("Unable to find PathMarkers object.");
-            return;
-        }
-
-        PathMarkersObject.SetActive(ShowPathMarkers);
-
-        var pathMarkersTransform = PathMarkersObject.GetComponent<Transform>();
-        var markerColumns = PathMarkersObject
-            .GetComponentsInChildren<Transform>()
-            .Where(t => t.parent == pathMarkersTransform)
-            .ToList();
-        //Debug.Log($"MarkerColumns count: {markerColumns.Count}");
-        PathMarkers = new GameObject[MazeColumns, MazeRows];
-        for (var j = 0; j < MazeRows; j++) {
-            for (var i = 0; i < MazeColumns; i++) {
-                PathMarkers[i, j] = markerColumns[i]
-                    .GetComponentsInChildren<Transform>()
-                    .FirstOrDefault(o => o.name == $"PathMarker{j}")
-                    .gameObject;
-                PathMarkers[i, j].GetComponent<MeshRenderer>().enabled = false;
-                foreach (var wall in PathMarkers[i, j].GetComponentsInChildren<MeshRenderer>().ToList()) {
-                    wall.enabled = false;
-                }
-                //Debug.Log($"PathMarker[{i}, {j}] found: {PathMarkers[i, j] != null}");
-                //Debug.Log($"ColumnName: {markerColumns[i].name}");
-                //Debug.Log($"MarkerName: {PathMarkers[i, j].name}");
-            }
-        }
-    }
-
-    private void DrawPath(Point point) {
-        if (PathMarkers == null) {
-            Debug.LogError("PathMarkers object not found.");
-            return;
-        }
-
-        foreach (var marker in PathMarkers) {
-            //marker.SetActive(false);
-            if (marker == null) {
-                Debug.LogError("Matker object not found");
-                return;
-            }
-            marker.GetComponent<MeshRenderer>().enabled = false;
-        }
-
-        var currentMarker = new Point(point.X, point.Y);
-        //PathMarkers[currentMarker.X, currentMarker.Y].SetActive(true);
-        PathMarkers[currentMarker.X, currentMarker.Y].GetComponent<MeshRenderer>().enabled = true;
-        while (MazePaths[currentMarker.X, currentMarker.Y] != Enums.Direction.None) {
-            switch(MazePaths[currentMarker.X, currentMarker.Y]) {
-                case Enums.Direction.Left:
-                    currentMarker.X--;
-                    break;
-                case Enums.Direction.Right:
-                    currentMarker.X++;
-                    break;
-                case Enums.Direction.Backward:
-                    currentMarker.Y--;
-                    break;
-                case Enums.Direction.Forward:
-                    currentMarker.Y++;
-                    break;
-            }
-            //PathMarkers[currentMarker.X, currentMarker.Y].SetActive(true);
-            PathMarkers[currentMarker.X, currentMarker.Y].GetComponent<MeshRenderer>().enabled = true;
-        }
-    }
-
-    private void UpdateWallCellWallMarkers(Point cell) {
-        if (PathMarkers == null) {
-            Debug.LogError("PathMarkers object not found.");
-            return;
-        }
-        var markers = PathMarkers[cell.X, cell.Y].GetComponentsInChildren<MeshRenderer>(true);
-        if((MazeWalls[cell.X, cell.Y] & (int)Enums.Direction.Left) > 0) {
-            markers.FirstOrDefault(r => r.name == "WallMarkerLeft").enabled = true;
-        }
-        if ((MazeWalls[cell.X, cell.Y] & (int)Enums.Direction.Right) > 0) {
-            markers.FirstOrDefault(r => r.name == "WallMarkerRight").enabled = true;
-        }
-        if ((MazeWalls[cell.X, cell.Y] & (int)Enums.Direction.Backward) > 0) {
-            markers.FirstOrDefault(r => r.name == "WallMarkerBackward").enabled = true;
-        }
-        if ((MazeWalls[cell.X, cell.Y] & (int)Enums.Direction.Forward) > 0) {
-            markers.FirstOrDefault(r => r.name == "WallMarkerForward").enabled = true;
+            OnWallsUpdated?.Invoke(this, new Point(CurrentCell.X, CurrentCell.Y + 1));
         }
     }
 

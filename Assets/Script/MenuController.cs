@@ -10,6 +10,8 @@ public class MenuController : MonoBehaviour
 {
     [SerializeField]
     private GameObject Mouse;
+    [SerializeField]
+    private PathMarkersController PathMarkers;
     private MouseController MouseController { get => Mouse.GetComponent<MouseController>(); }    
     private GeneticManager Manager;
     //[SerializeField]
@@ -73,8 +75,9 @@ public class MenuController : MonoBehaviour
         UpdateTargetCellParamsAcessibility();
         UpdateSavedPopulations();
         UpdateSavedPopulationsAccessibility();
+        ToggleMarkersVisibility();
 
-        Manager = new GeneticManager();
+        Manager = new GeneticManager(MouseController);
         Manager.MouseController = MouseController;
         Manager.OnTrainingComplete += (GeneticManager m) => NeuralNetworkSerialization.SaveToJson(m.Population, m.currentGeneration);
         Manager.OnTrainingComplete += (GeneticManager m) => ResetMouse();
@@ -148,7 +151,12 @@ public class MenuController : MonoBehaviour
     }
 
     public void ToggleMarkersVisibility() {
-        MouseController.ShowPathMarkers = MarkersVisibilityToggle.isOn;
+        //MouseController.ShowPathMarkers = MarkersVisibilityToggle.isOn;
+        if (PathMarkers == null) {
+            Debug.LogError($"PathMarkers Object not found");
+            return;
+        }
+        PathMarkers.ShowPathMarkers = MarkersVisibilityToggle.isOn;
     }
 
     public void SwitchControlMode() {

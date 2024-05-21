@@ -473,6 +473,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Mouse: {fileID: 157028452}
+  PathMarkers: {fileID: 1752629342}
 --- !u!1 &124352271
 GameObject:
   m_ObjectHideFlags: 0
@@ -703,6 +704,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 8347751975029389516, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
   m_PrefabInstance: {fileID: 933683850}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &157028453 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 244209969277291786, guid: 9592558a5117ffe40b2f05f002f86de9, type: 3}
+  m_PrefabInstance: {fileID: 933683850}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 157028452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bac00fd118747cf49b85861f26bfaa8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &163503977
 GameObject:
   m_ObjectHideFlags: 0
@@ -9034,6 +9046,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1731593778}
   m_CullTransparentMesh: 1
+--- !u!114 &1752629342 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3055876607457692557, guid: 5d28568ffcfd7dd438e3d19326715318, type: 3}
+  m_PrefabInstance: {fileID: 8130762259380020640}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 646c2e33406c04f43a82786982e51f39, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1836923532
 GameObject:
   m_ObjectHideFlags: 0
@@ -10753,6 +10776,14 @@ PrefabInstance:
     serializedVersion: 2
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3055876607457692557, guid: 5d28568ffcfd7dd438e3d19326715318, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3055876607457692557, guid: 5d28568ffcfd7dd438e3d19326715318, type: 3}
+      propertyPath: MouseController
+      value: 
+      objectReference: {fileID: 157028453}
     - target: {fileID: 5777759521994251844, guid: 5d28568ffcfd7dd438e3d19326715318, type: 3}
       propertyPath: m_Name
       value: PathMarkers

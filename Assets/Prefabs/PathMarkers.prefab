@@ -197,6 +197,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8090925863076633182}
+  - component: {fileID: 3055876607457692557}
   m_Layer: 0
   m_Name: PathMarkers
   m_TagString: Untagged
@@ -233,8 +234,21 @@ Transform:
   - {fileID: 3282640702812063263}
   - {fileID: 6324676387693616563}
   m_Father: {fileID: 0}
-  m_RootOrder: 7
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3055876607457692557
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5777759521994251844}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 646c2e33406c04f43a82786982e51f39, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MouseController: {fileID: 0}
 --- !u!1 &5819396188429482726
 GameObject:
   m_ObjectHideFlags: 0

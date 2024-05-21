@@ -35,9 +35,13 @@ public class GeneticManager
     public Action<GeneticManager> OnRepopulated;
     public Action<GeneticManager> OnNextAgentStart;
 
+    public GeneticManager(MouseController mouseController) {
+        MouseController = mouseController;
+        MouseController.OnNeuralDeath += OnNeuralDeath;
+    }
+
     public void StartTraining(List<NeuralNetwork> existingPopulation = null, int generation = 1, IEnumerable<(int, int)> layersStructure = null, float mutationChance = 0.055f) {
         HiddenLayerStructure = layersStructure?.ToList() ?? new List<(int, int)> { (9, 2) };
-        MouseController.OnNeuralDeath += OnNeuralDeath;
         currentGeneration = generation;
         currentGenome = 0;
         MutationChance = mutationChance;
@@ -45,7 +49,7 @@ public class GeneticManager
         Population = existingPopulation ?? new List<NeuralNetwork>();
         GrowPopulation(Population, PopulationSize);
         GenePool = new List<NeuralNetwork>();
-        OnNeuralDeath();
+        OnNeuralDeath(MouseController);
     }
 
     private void GrowPopulation(List<NeuralNetwork> population, int targetSize) {
@@ -55,12 +59,12 @@ public class GeneticManager
         }
     }
 
-    private void OnNeuralDeath() {
+    private void OnNeuralDeath(MouseController mouse) {
         if (currentGenome == Population.Count) {
             RePopulate();
         }
         if (MouseController.IsActive) {
-            MouseController.Reset(Population[currentGenome++]);
+            mouse.Reset(Population[currentGenome++]);
             OnNextAgentStart?.Invoke(this);
         }
     }
