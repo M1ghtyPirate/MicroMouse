@@ -12,14 +12,16 @@ public class PathMarkersController : MonoBehaviour
 
     private bool _ShowPathMarkers;
     [SerializeField]
-    public bool ShowPathMarkers { get => _ShowPathMarkers; set { foreach (var marker in PathMarkers) { marker.SetActive(value); } _ShowPathMarkers = value; } }
+    public bool ShowPathMarkers { get => _ShowPathMarkers; set { foreach (var marker in PathMarkers ?? new GameObject[0,0]) { marker.SetActive(value); } _ShowPathMarkers = value; } }
     [SerializeField]
     public MouseController MouseController;
 
     private void OnEnable() {
         InitializePathMarkers();
         MouseController.OnPathRecalculated += (m, p) => DrawPath(p, m.MazePaths);
+        DrawPath(MouseController.CurrentCell, MouseController.MazePaths);
         MouseController.OnWallsUpdated += (m, p) => UpdateCellWallMarkers(p, m.MazeWalls[p.X, p.Y]);
+        UpdateCellWallMarkers(MouseController.MazeWalls);
     }
 
     private void InitializePathMarkers() {
@@ -47,6 +49,7 @@ public class PathMarkersController : MonoBehaviour
                     .FirstOrDefault(o => o.name == $"PathMarker{j}")
                     .gameObject;
                 DisablePathMarker(PathMarkers[i, j]);
+                PathMarkers[i, j].SetActive(ShowPathMarkers);
                 //Debug.Log($"PathMarker[{i}, {j}] found: {PathMarkers[i, j] != null}");
                 //Debug.Log($"ColumnName: {markerColumns[i].name}");
                 //Debug.Log($"MarkerName: {PathMarkers[i, j].name}");
@@ -106,5 +109,13 @@ public class PathMarkersController : MonoBehaviour
         markers.FirstOrDefault(r => r.name == "WallMarkerRight").enabled = (mazeWallsFlag & (int)Enums.Direction.Right) > 0;
         markers.FirstOrDefault(r => r.name == "WallMarkerBackward").enabled = (mazeWallsFlag & (int)Enums.Direction.Backward) > 0;
         markers.FirstOrDefault(r => r.name == "WallMarkerForward").enabled = (mazeWallsFlag & (int)Enums.Direction.Forward) > 0;
+    }
+
+    private void UpdateCellWallMarkers(int[,] mazeWalls) {
+        for(var i = 0; i < mazeWalls.GetLength(0); i++) {
+            for (var j = 0; j < mazeWalls.GetLength(1); j++) {
+                UpdateCellWallMarkers(new Point(i, j), mazeWalls[i, j]);
+            }
+        }
     }
 }

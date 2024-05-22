@@ -20,8 +20,8 @@ public class MouseController : MonoBehaviour {
     SensorController SensorRight;
     [SerializeField]
     SensorController SensorLeft;
-    [SerializeField]
-    public bool IsActive;
+    private bool _IsActive;
+    public bool IsActive { get => _IsActive; set { _IsActive = value; OnActivationChanged?.Invoke(this, value); } }
 
     private float AccelerationMultiplier = 0f;
     private float TurnMultiplier = 0f;
@@ -71,6 +71,9 @@ public class MouseController : MonoBehaviour {
     public int TargetsReached { get; private set; }
     public Enums.ControlMode CurrentControlMode = Enums.ControlMode.Manual;
 
+    public Action<MouseController, bool> OnActivationChanged;
+    public Action<MouseController, Point> OnFinalTargetReached;
+
     #region MazeMapping
 
     private int MazeRows = 16;
@@ -81,7 +84,7 @@ public class MouseController : MonoBehaviour {
     private Enums.Direction CurrentDirection = Enums.Direction.Forward;
     public Point StartingCell = new Point(0, 0);
     public Point CenterCell = new Point(7, 7);
-    private Point TargetCell;
+    public Point TargetCell;
     public Action<MouseController, Point> OnPathRecalculated;
     public Action<MouseController, Point> OnWallsUpdated;
 
@@ -100,7 +103,7 @@ public class MouseController : MonoBehaviour {
 
         InitializeMazeWalls();
         InitializeMazePaths(TargetCell);
-        Debug.Log($"Heading towards: [{TargetCell.X}, {TargetCell.Y}] - {Time.time}");
+        //Debug.Log($"Heading towards: [{TargetCell.X}, {TargetCell.Y}] - {Time.time}");
 
         InitialMousePosition = gameObject.transform.position;
         InitialMouseRotation = gameObject.transform.rotation;
@@ -266,7 +269,8 @@ public class MouseController : MonoBehaviour {
                 new Point(StartingCell.X, StartingCell.Y) :
                 new Point(CenterCell.X, CenterCell.Y);
             InitializeMazePaths(TargetCell);
-            Debug.Log($"Target reached, heading towards: [{TargetCell.X}, {TargetCell.Y}] - {Time.time} / {TargetsReached}");
+            //Debug.Log($"Target reached, heading towards: [{TargetCell.X}, {TargetCell.Y}] - {Time.time} / {TargetsReached}");
+            OnFinalTargetReached?.Invoke(this, CurrentCell);
             TargetsReached = 0;
             return;
         }
@@ -351,7 +355,20 @@ public class MouseController : MonoBehaviour {
 
     private void ManualControl() {
 
-        if (Input.GetKey(KeyCode.F)) {
+        var finalTargetPosition = new Vector3(InitialMousePosition.x + 0.18f * (TargetCell.X - StartingCell.X), 
+            InitialMousePosition.y,
+            InitialMousePosition.z + 0.18f * (TargetCell.Y - StartingCell.Y));
+        if (Vector3.Distance(transform.position, finalTargetPosition) < 0.09f) {
+            CurrentCell = TargetCell;
+            TargetCell = TargetCell.X == CenterCell.X && TargetCell.Y == CenterCell.Y ?
+                new Point(StartingCell.X, StartingCell.Y) :
+                new Point(CenterCell.X, CenterCell.Y);
+            InitializeMazePaths(TargetCell);
+            //Debug.Log($"Target reached, heading towards: [{TargetCell.X}, {TargetCell.Y}] - {Time.time} / {TargetsReached}");
+            OnFinalTargetReached?.Invoke(this, CurrentCell);
+        }
+
+        if (Input.GetKey(KeyCode.I)) {
             TargetPosition = gameObject.transform.position;
             RecalculateCurrentDirection();
             Debug.Log($"CurrendDir: {CurrentDirection}");
@@ -359,7 +376,7 @@ public class MouseController : MonoBehaviour {
             return;
         }
 
-        if (Input.GetKey(KeyCode.B)) {
+        if (Input.GetKey(KeyCode.K)) {
             TargetPosition = gameObject.transform.position;
             RecalculateCurrentDirection();
             Debug.Log($"CurrendDir: {CurrentDirection}");
@@ -367,14 +384,14 @@ public class MouseController : MonoBehaviour {
             return;
         }
 
-        if (Input.GetKey(KeyCode.L)) {
+        if (Input.GetKey(KeyCode.J)) {
             RecalculateCurrentDirection();
             TurnToRotation(TargetRotation - 90f);
             CurrentDirection = (Enums.Direction)(0xF & ((int)CurrentDirection >> 1 | (int)CurrentDirection << 3));
             return;
         }
 
-        if (Input.GetKey(KeyCode.R)) {
+        if (Input.GetKey(KeyCode.L)) {
             RecalculateCurrentDirection();
             TurnToRotation(TargetRotation + 90f);
             CurrentDirection = (Enums.Direction)(0xF & ((int)CurrentDirection << 1 | (int)CurrentDirection >> 3));
@@ -421,7 +438,8 @@ public class MouseController : MonoBehaviour {
                 new Point(StartingCell.X, StartingCell.Y) :
                 new Point(CenterCell.X, CenterCell.Y);
             InitializeMazePaths(TargetCell);
-            Debug.Log($"Target reached, heading towards: [{TargetCell.X}, {TargetCell.Y}] - {Time.time} / {TargetsReached}");
+            //Debug.Log($"Target reached, heading towards: [{TargetCell.X}, {TargetCell.Y}] - {Time.time} / {TargetsReached}");
+            OnFinalTargetReached?.Invoke(this, CurrentCell);
             if (CurrentControlMode != Enums.ControlMode.NeuralTraining) {
                 TargetsReached = 0;
             }

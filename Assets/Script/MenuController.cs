@@ -28,7 +28,6 @@ public class MenuController : MonoBehaviour
     private TMP_Dropdown SavedPopulationsDropdown;
     private Button SaveButton;
     private Text GenerationText;
-    private Text FitnessText;
     private Slider AgentSelectionSlider;
     private Text AgentText;
     private TMP_InputField HiddenLayers;
@@ -38,6 +37,8 @@ public class MenuController : MonoBehaviour
     private Text TargetCellXText;
     private Slider TargetCellYSlider;
     private Text TargetCellYText;
+    private RunResultsController RunResults;
+    private BestAgentsController BestAgents;
 
     private List<string> SavedPopulations;
 
@@ -55,7 +56,6 @@ public class MenuController : MonoBehaviour
         AgentSelectionSlider = gameObject.GetComponentsInChildren<Slider>().FirstOrDefault(b => b.name == "AgentSelection");
         AgentText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "Agent");
         GenerationText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "Generation");
-        FitnessText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "Fitness");
         HiddenLayers = gameObject.GetComponentsInChildren<TMP_InputField>().FirstOrDefault(b => b.name == "HiddenLayers");
         MutationSelectionSlider = gameObject.GetComponentsInChildren<Slider>().FirstOrDefault(b => b.name == "MutationSelection");
         MutationText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "Mutation");
@@ -63,11 +63,13 @@ public class MenuController : MonoBehaviour
         TargetCellXText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "TargetCellX");
         TargetCellYSlider = gameObject.GetComponentsInChildren<Slider>().FirstOrDefault(b => b.name == "TargetCellYSelection");
         TargetCellYText = gameObject.GetComponentsInChildren<Text>().FirstOrDefault(b => b.name == "TargetCellY");
+        RunResults = gameObject.GetComponentsInChildren<RunResultsController>().FirstOrDefault(b => b.name == "Runs");
+        BestAgents = gameObject.GetComponentsInChildren<BestAgentsController>().FirstOrDefault(b => b.name == "BestAgents");
 
         SaveButton.interactable = false;
         UpdateAgentSelection();
         UpdateGenerationText();
-        UpdateFitnessText();
+        BestAgents.UpdateAgentFitness();
         UpdateAgentText();
         UpdateLayersParamsAccessibility();
         UpdateMutationSelectionAccessibility();
@@ -78,11 +80,13 @@ public class MenuController : MonoBehaviour
         ToggleMarkersVisibility();
 
         Manager = new GeneticManager(MouseController);
-        Manager.MouseController = MouseController;
         Manager.OnTrainingComplete += (GeneticManager m) => NeuralNetworkSerialization.SaveToJson(m.Population, m.currentGeneration);
         Manager.OnTrainingComplete += (GeneticManager m) => ResetMouse();
         Manager.OnNextAgentStart += (GeneticManager m) => UpdateGenerationText(m.currentGeneration, m.currentGenome, m.PopulationSize);
-        Manager.OnRepopulated += (GeneticManager m) => UpdateFitnessText(m.TopFitnesses);
+        Manager.OnRepopulated += (GeneticManager m) => BestAgents.UpdateAgentFitness(m.TopFitnesses);
+        RunResults.MouseController = MouseController;
+        MouseController.OnActivationChanged += RunResults.MouseActivationChangedEventHandler;
+        MouseController.OnFinalTargetReached += RunResults.MouseFinalTargetReachedEventhandler;
     }
 
     private void UpdateSavedPopulationsAccessibility() {
@@ -97,10 +101,6 @@ public class MenuController : MonoBehaviour
 
     private void UpdateGenerationText(int generation = 0, int agent = 0, int population = 0) {
         GenerationText.text = generation + agent + population == 0 ? "" : $"{generation} - {agent} / {population}";
-    }
-
-    private void UpdateFitnessText(IEnumerable<float> fitnesses = null) {
-        FitnessText.text = string.Join(" / ", fitnesses?.Select(f => f.ToString("0")) ?? new []{ "" });
     }
 
     public void ResetTargetCell() {
@@ -153,7 +153,7 @@ public class MenuController : MonoBehaviour
     public void ToggleMarkersVisibility() {
         //MouseController.ShowPathMarkers = MarkersVisibilityToggle.isOn;
         if (PathMarkers == null) {
-            Debug.LogError($"PathMarkers Object not found");
+            Debug.LogError($"PathMarkers Controller not found");
             return;
         }
         PathMarkers.ShowPathMarkers = MarkersVisibilityToggle.isOn;
@@ -196,7 +196,7 @@ public class MenuController : MonoBehaviour
         } else {
             MouseController.Reset();
             UpdateGenerationText();
-            UpdateFitnessText();
+            BestAgents.UpdateAgentFitness();
         }
     }
 
@@ -213,7 +213,7 @@ public class MenuController : MonoBehaviour
         UpdateSavedPopulationsAccessibility();
         UpdateTargetCellParamsAcessibility();
         SetTimeScale(1f);
-        UpdateSavedPopulations();        
+        UpdateSavedPopulations();
     }
 
     public void SwitchCamera(string cameraName) {
@@ -257,7 +257,7 @@ public class MenuController : MonoBehaviour
         AgentSelectionSlider.maxValue = population.Item2.Count - 1;
         HiddenLayers.text = NeuralNetworkSerialization.GetHiddenLayersString(population.Item2.FirstOrDefault());
         UpdateGenerationText(Mathf.Max(population.Item1, 1), (int)AgentSelectionSlider.value + 1, population.Item2?.Count ?? Manager.PopulationSize);
-        UpdateFitnessText(population.Item2?.GetRange(0, Manager.BestAgents).Select(n => n.Fitness));
+        BestAgents.UpdateAgentFitness(population.Item2?.GetRange(0, Manager.BestAgents).Select(n => n.Fitness));
     }
 
     public void UpdateAgentText() {
