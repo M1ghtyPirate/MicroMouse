@@ -32,9 +32,11 @@ public class MouseController : MonoBehaviour {
     private float RotationDifference { get => TargetRotation - gameObject.transform.rotation.eulerAngles.y; }
     private float AbsRotationDifference { get => Mathf.Min(Mathf.Abs(TargetRotation - gameObject.transform.rotation.eulerAngles.y), Mathf.Abs(TargetRotation + 360f - gameObject.transform.rotation.eulerAngles.y)); }
     private float RelRotationDifference { get => (Mathf.Abs(RotationDifference) < 180f ? RotationDifference.CompareTo(0) : -RotationDifference.CompareTo(0)) * AbsRotationDifference; }
-    private float TargetDirection { get => Quaternion.LookRotation(gameObject.transform.position - TargetPosition).eulerAngles.y; }
+    //private float TargetDirection { get => Quaternion.LookRotation(gameObject.transform.position - TargetPosition).eulerAngles.y; }
+    private float TargetDirection { get => Quaternion.LookRotation(TargetPosition - gameObject.transform.position).eulerAngles.y; }
     private float TargetDirectionDifference { get => TargetDirection - gameObject.transform.rotation.eulerAngles.y; }
-    private float AbsTargetDirectionDifference { get => Mathf.Min(Mathf.Abs(TargetDirectionDifference - gameObject.transform.rotation.eulerAngles.y), Mathf.Abs(TargetDirectionDifference + 360f - gameObject.transform.rotation.eulerAngles.y)); }
+    //private float AbsTargetDirectionDifference { get => Mathf.Min(Mathf.Abs(TargetDirectionDifference - gameObject.transform.rotation.eulerAngles.y), Mathf.Abs(TargetDirectionDifference + 360f - gameObject.transform.rotation.eulerAngles.y)); }
+    private float AbsTargetDirectionDifference { get => Mathf.Min(Mathf.Abs(TargetDirectionDifference), 360f - Mathf.Abs(TargetDirectionDifference)); }
     private float RelTargetDirectionDifference { get => (Mathf.Abs(TargetDirectionDifference) < 180f ? TargetDirectionDifference.CompareTo(0) : -TargetDirectionDifference.CompareTo(0)) * AbsTargetDirectionDifference; }
 
     private bool IsTravelling;
@@ -164,6 +166,8 @@ public class MouseController : MonoBehaviour {
                     Travel();
                     break;
                 }
+                //var rigidBody = gameObject.GetComponent<Rigidbody>();
+                //Debug.Log($"NNetInput: [{TargetDistance}, {RelTargetDirectionDifference} / {TargetDirection} : {rigidBody.rotation.eulerAngles.y} / {AbsTargetDirectionDifference}, {rigidBody.velocity.magnitude}]");
                 ManualControl();
                 break;
             case Enums.ControlMode.Neural:
@@ -507,16 +511,16 @@ public class MouseController : MonoBehaviour {
         LastAbsTargetDirectionDifference = AbsTargetDirectionDifference;
         LastTargetDistance = TargetDistance;
         //Debug.Log($"TargetLoc: [{TargetPosition.x},{TargetPosition.y}, {TargetPosition.z}]");
-        if (TargetDistance < 2e-2 && AbsRotationDifference < 10) {
+        if (TargetDistance < 2e-2 && AbsRotationDifference < 20) {
             TravelTime = 0f;
             IsTravelling = false;
             return;
         }
 
         var rigidBody = gameObject.GetComponent<Rigidbody>();
+        //Debug.Log($"NNetInput: [{TargetDistance}, {RelTargetDirectionDifference}, {rigidBody.velocity.magnitude}]");
         NNet.CalculateLayers(new float[]{ TargetDistance, RelTargetDirectionDifference, rigidBody.velocity.magnitude});
         //NNet.CalculateLayers(new float[]{ TargetDistance * 10f, RelTargetDirectionDifference / 100f, rigidBody.velocity.magnitude * 10f});
-
         WheelRight.AccelerationMultiplier = 0.4f * NNet.OutputLayer[0];
         WheelLeft.AccelerationMultiplier = 0.4f * NNet.OutputLayer[1];
     }

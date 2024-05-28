@@ -241,6 +241,7 @@ public class MenuController : MonoBehaviour
         AgentSelectionSlider.value = 0;
         AgentSelectionSlider.interactable = false;
         UpdateAgentText();
+        BestAgents.UpdateAgentFitness();
         MutationSelectionSlider.value = (int)(5.5f * 2);
         UpdateMutationText();
         UpdateMutationSelectionAccessibility();
@@ -257,7 +258,7 @@ public class MenuController : MonoBehaviour
         AgentSelectionSlider.maxValue = population.Item2.Count - 1;
         HiddenLayers.text = NeuralNetworkSerialization.GetHiddenLayersString(population.Item2.FirstOrDefault());
         UpdateGenerationText(Mathf.Max(population.Item1, 1), (int)AgentSelectionSlider.value + 1, population.Item2?.Count ?? Manager.PopulationSize);
-        BestAgents.UpdateAgentFitness(population.Item2?.GetRange(0, Manager.BestAgents).Select(n => n.Fitness));
+        BestAgents.UpdateAgentFitness(population.Item2.GetRange(0, Manager.BestAgents).Select(n => n.Fitness));
     }
 
     public void UpdateAgentText() {

@@ -96,7 +96,7 @@ public class RunResultsController : MonoBehaviour
     #region MouseEventHadlers
 
     public void MouseActivationChangedEventHandler(MouseController mouse, bool isActive) {
-        Debug.Log($"Event Handler: {isActive + ""}");
+        //Debug.Log($"Event Handler: {isActive + ""}");
         if (isActive) {
             ClearContent();
             StartNewRun();
