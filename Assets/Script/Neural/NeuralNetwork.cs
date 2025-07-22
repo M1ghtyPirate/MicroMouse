@@ -1,17 +1,17 @@
+using Assets.Script.Neural.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class NeuralNetwork
-{
-    public float[] InputLayer;
+public class NeuralNetwork : INeuralNetwork {
+    public float[] InputLayer { get; set; }
     public List<float[]> HiddenLayers;
-    public float[] OutputLayer;
+    public float[] OutputLayer { get; set; }
     public List<float[,]> Weights;
     public float[] Biases;
-    public float Fitness;
+    public float Fitness { get; set; }
 
     public NeuralNetwork(int inputLayerNeuronCount, int outputLayerNeuronCount) {
         if(inputLayerNeuronCount < 1 || outputLayerNeuronCount < 2) {

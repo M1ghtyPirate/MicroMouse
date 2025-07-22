@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Script.Neural.Interfaces;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
@@ -63,7 +64,7 @@ public class MouseController : MonoBehaviour {
 	}
 
 	private float TargetDistance { get => Vector3.Distance(new Vector3(gameObject.transform.position.x, 0, gameObject.transform.position.z), new Vector3(TargetPosition.x, 0, TargetPosition.z)); }
-	private NeuralNetwork NNet;
+	private INeuralNetwork NNet;
 	private Vector3 InitialMousePosition;
 	private Quaternion InitialMouseRotation;
 	private float TravelTime;
@@ -185,7 +186,7 @@ public class MouseController : MonoBehaviour {
 
 	#endregion
 
-	public void Reset(NeuralNetwork nnet = null) {
+	public void Reset(INeuralNetwork nnet = null) {
 		if (nnet != null) {
 			NNet = nnet;
 		}
