@@ -41,7 +41,7 @@ public class GeneticManager
     }
 
     public void StartTraining(List<NeuralNetwork> existingPopulation = null, int generation = 1, IEnumerable<(int, int)> layersStructure = null, float mutationChance = 0.055f) {
-        HiddenLayerStructure = layersStructure?.ToList() ?? new List<(int, int)> { (9, 2) };
+        HiddenLayerStructure = existingPopulation?.FirstOrDefault()?.GetHiddenLayersStructure() ?? layersStructure?.ToList() ?? new List<(int, int)> { (9, 2) };
         currentGeneration = generation;
         currentGenome = 0;
         MutationChance = mutationChance;
