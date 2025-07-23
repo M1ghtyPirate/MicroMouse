@@ -158,7 +158,7 @@ public class NeuralNetwork : INeuralNetwork {
         }
     }
 
-    public NeuralNetwork Clone(bool cloneCurrentValues = false) {
+    public INeuralNetwork Clone(bool cloneCurrentValues = false) {
         var clone = new NeuralNetwork(InputLayer.Length, OutputLayer.Length, GetHiddenLayersStructure(), true);
         for (var i = 0; i < Weights.Count; i++) {
             //Debug.Log($"Weights: {parent1.Weights.Count} / {child1.Weights.Count}");

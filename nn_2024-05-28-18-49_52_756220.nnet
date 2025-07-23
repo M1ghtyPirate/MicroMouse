@@ -1,6 +1,7 @@
 {
-    "Item1": 52,
-    "Item2": {
+	"Item1": "NeuralNetwork",
+    "Item2": 52,
+    "Item3": {
         "list": [
             {
                 "InputLayer": {

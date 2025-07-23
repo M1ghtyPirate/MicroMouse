@@ -61,16 +61,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Script\MouseController.cs" />
+    <Compile Include="Assets\Script\Neural\Interfaces\IGeneticManager.cs" />
     <Compile Include="Assets\Script\Neural\NeuralNetworkNEAT.cs" />
     <Compile Include="Assets\Script\Neural\NeuralNetworkSerialization.cs" />
     <Compile Include="Assets\Script\WheelController.cs" />
     <Compile Include="Assets\Script\RunResultsController.cs" />
     <Compile Include="Assets\Script\Utils\Matrices.cs" />
+    <Compile Include="Assets\Script\Neural\Models\NEAT\Node.cs" />
     <Compile Include="Assets\Script\SensorController.cs" />
     <Compile Include="Assets\Script\BestAgentsController.cs" />
     <Compile Include="Assets\Script\Neural\Interfaces\INeuralNetwork.cs" />
     <Compile Include="Assets\Script\Neural\GeneticManager.cs" />
     <Compile Include="Assets\Script\MenuController.cs" />
+    <Compile Include="Assets\Script\Neural\Models\NEAT\Link.cs" />
     <Compile Include="Assets\Script\Enums.cs" />
     <Compile Include="Assets\Script\Neural\NeuralNetwork.cs" />
     <Compile Include="Assets\Script\PathMarkersController.cs" />
