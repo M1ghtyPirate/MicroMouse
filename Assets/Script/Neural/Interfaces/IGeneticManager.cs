@@ -16,5 +16,6 @@ namespace Assets.Script.Neural.Interfaces {
 		public float TargetFitness { get; set; }
 		public int PopulationSize { get; set; }
 		public List<INeuralNetwork> PopulationInterface { get; }
+		public void ClearSubscriptions();
 	}
 }

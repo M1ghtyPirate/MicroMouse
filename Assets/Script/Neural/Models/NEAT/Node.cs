@@ -5,9 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Assets.Script.Neural.Models.NEAT {
+	[Serializable]
 	public class Node {
-		public int LayerNumber { get; set; }
-		public float Value { get; set; }
-		public int Index { get; set; }
+		public int LayerNumber;
+		public float Value;
+		public int Index;
 	}
 }

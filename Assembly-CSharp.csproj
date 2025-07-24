@@ -72,8 +72,10 @@
     <Compile Include="Assets\Script\BestAgentsController.cs" />
     <Compile Include="Assets\Script\Neural\Interfaces\INeuralNetwork.cs" />
     <Compile Include="Assets\Script\Neural\GeneticManager.cs" />
+    <Compile Include="Assets\Script\Neural\GeneticManagerNEAT.cs" />
     <Compile Include="Assets\Script\MenuController.cs" />
     <Compile Include="Assets\Script\Neural\Models\NEAT\Link.cs" />
+    <Compile Include="Assets\Script\Neural\Models\NEAT\Species.cs" />
     <Compile Include="Assets\Script\Enums.cs" />
     <Compile Include="Assets\Script\Neural\NeuralNetwork.cs" />
     <Compile Include="Assets\Script\PathMarkersController.cs" />
