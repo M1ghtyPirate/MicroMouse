@@ -9,6 +9,8 @@ namespace Assets.Script.Neural.Models.NEAT {
 		public List<NeuralNetworkNEAT> Networks { get; set; }
 		public int Index { get; set; }
 		public NeuralNetworkNEAT Representative { get; set; }
-		public float AvgFitness => (Networks?.Sum(n => n.Fitness) / Networks?.Count) ?? 0;
+		public float AvgFitness => Networks.Any() ? Networks.Sum(n => n.Fitness) / Networks.Count : 0;
+		public float BestAvgFitness { get; set; }
+		public int GenerationsSinceLastImprovement { get; set; }
 	}
 }

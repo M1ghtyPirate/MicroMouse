@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Unity.VisualScripting;
-using UnityEditor.Animations;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -29,7 +28,8 @@ namespace Assets.Script.Neural {
 		public int CurrentGenome { get; set; }
 		public List<float> TopFitnesses { get; set; }
 		public float TargetFitness { get; set; }
-		public int PopulationSize { get; set; } = 85;
+		//public int PopulationSize { get; set; } = 85;
+		public int PopulationSize { get; set; } = 1000;
 
 		public List<NeuralNetworkNEAT> Population { get; set; }
 		public List<INeuralNetwork> PopulationInterface => Population?.Select(p => (INeuralNetwork)p).ToList();
@@ -60,7 +60,10 @@ namespace Assets.Script.Neural {
 
 		public int MutationAttempts { get; set; } = 100;
 
-		public float SpeciesSurvivalRate { get; set; } = 0.5f;
+		public float SpeciesSurvivalRate { get; set; } = 0.2f;
+		public int SpeciesStagnationLimit { get; set; } = 15;
+		//public float SpeciesImprovementThreshold { get; set; } = 200f;
+		public float SpeciesImprovementThreshold { get; set; } = float.MinValue;
 
 		#endregion
 
@@ -99,8 +102,15 @@ namespace Assets.Script.Neural {
 			UpdateLinkInnovations();
 			UpdateNodeIndexCounter();
 			ResetNodeValues();
+			ResetPopulationFitness();
 			//Speciate();
 			OnNeuralDeath(MouseController);
+		}
+
+		private void ResetPopulationFitness() {
+			foreach (var nnet in Population) {
+				nnet.Fitness = 0;
+			}
 		}
 
 		private void GrowPopulation(List<NeuralNetworkNEAT> population, int targetSize) {
@@ -151,7 +161,30 @@ namespace Assets.Script.Neural {
 		}
 
 		private void Speciate() {
-			foreach(var existingSpecies in Species) {
+			//// Single species
+			//var species0 = Species.FirstOrDefault();
+			//if (species0 == null) {
+			//	species0 = new Species() {
+			//		Index = 0,
+			//		Networks = Population.ToList()
+			//	};
+			//	Species.Add(species0);
+			//}
+			//return;
+
+			foreach(var existingSpecies in Species.ToList()) {
+				if (existingSpecies.AvgFitness > existingSpecies.BestAvgFitness) {
+					existingSpecies.GenerationsSinceLastImprovement = 0;
+					existingSpecies.BestAvgFitness = existingSpecies.AvgFitness;
+				} else {
+					existingSpecies.GenerationsSinceLastImprovement++;
+					if (existingSpecies.GenerationsSinceLastImprovement > SpeciesStagnationLimit) {
+						ShrinkSpecies(Population, existingSpecies, 0);
+						Species.Remove(existingSpecies);
+						Debug.LogWarning($"Species removed <{existingSpecies.Index}>");
+						continue;
+					}
+				}
 				var minDistance = existingSpecies.Networks
 					.Min(n => CalculateNetworkDistance(n, existingSpecies.Representative));
 				existingSpecies.Representative = (NeuralNetworkNEAT)existingSpecies.Networks
@@ -172,6 +205,7 @@ namespace Assets.Script.Neural {
 				}
 				species.Networks.Add(network);
 			}
+			Species = Species.OrderByDescending(s => s.AvgFitness).ToList();
 			Debug.LogWarning($"Determined <{Species.Count}: {string.Join(", ", Species.Select(s => s.Networks.Count))}> species.");
 		}
 
@@ -338,6 +372,30 @@ namespace Assets.Script.Neural {
 			}
 		}
 
+		private void Mutate(NeuralNetworkNEAT network) {
+			if (Random.value < NodeMutationChance) {
+				MutateNode(network);
+			}
+			if (Random.value < LinkMutationChance) {
+				MutateLink(network);
+			}
+			if (Random.value < LinkToggleMutationChance) {
+				MutateLinkToggle(network);
+			}
+			if (Random.value < WeightRandomMutationChance) {
+				MutateWieghtRandom(network);
+			}
+			if (Random.value < WeightShiftMutationChance) {
+				MutateWieghtShift(network);
+			}
+		}
+
+		private void Mutate(IEnumerable<NeuralNetworkNEAT> population) {
+			foreach (var network in population) {
+				Mutate(network);
+			}
+		}
+
 		private void AddSpeciesToNextGeneration(List<NeuralNetworkNEAT> population, Species species, int speciesPopulation) {
 			if (speciesPopulation == 0 || species.Networks?.Count == 0 || population == null) {
 				return;
@@ -352,30 +410,19 @@ namespace Assets.Script.Neural {
 				index = Random.Range(0, genePool.Count);
 				var parent2 = genePool[index];
 				var child = Crossover(parent1, parent2);
-				if (Random.value < NodeMutationChance) {
-					MutateNode(child);
-				}
-				if (Random.value < LinkMutationChance) {
-					MutateLink(child);
-				}
-				if (Random.value < LinkToggleMutationChance) {
-					MutateLinkToggle(child);
-				}
-				if (Random.value < WeightRandomMutationChance) {
-					MutateWieghtRandom(child);
-				}
-				if (Random.value < WeightShiftMutationChance) {
-					MutateWieghtShift(child);
-				}
+				//Mutate(child);
 				species.Networks.Add(child);
 			}
+
+			Mutate(species.Networks);
+
 			population.AddRange(species.Networks);
 		}
 
 		private void RePopulate() {
 			Population = Population.OrderByDescending(n => n.Fitness).ToList();
 			TopFitnesses = Population.Select(n => n.Fitness).ToList().GetRange(0, BestAgents);
-			if (!Population.Any(n => n.Fitness < TargetFitness)) {
+			if (Species.Any(s => s.AvgFitness > TargetFitness)) {
 				Debug.LogWarning($"Training complete!");
 				OnTrainingComplete?.Invoke(this);
 			}
@@ -392,9 +439,12 @@ namespace Assets.Script.Neural {
 				if (Species.LastOrDefault() == species) {
 					speciesPopulation = PopulationSize - newPopulation.Count;
 				}
-				Debug.LogWarning($"Species size: <{species.Index} - {speciesPopulation}>");
+				//Debug.LogWarning($"Species size: <{species.Index} - {speciesPopulation}>");
 				ShrinkSpecies(Population, species, speciesPopulation);
 				AddSpeciesToNextGeneration(newPopulation, species, speciesPopulation);
+			}
+			if (newPopulation.Count < PopulationSize) {
+				GrowPopulation(newPopulation, PopulationSize);
 			}
 			Species = Species.Where(s => s.Networks.Any()).ToList();
 			Debug.LogWarning($"Current species <{Species.Count}: {string.Join(", ", Species.Select(s => s.Networks.Count))}> / {Species.Sum(s => s.Networks.Count)} / {newPopulation.Count} ");
@@ -402,6 +452,7 @@ namespace Assets.Script.Neural {
 			//	ShrinkSpecies(newPopulation, species, 0);
 			//	Species.Remove(species);
 			//}
+
 
 			CurrentGenome = 0;
 			CurrentGeneration++;
@@ -411,6 +462,7 @@ namespace Assets.Script.Neural {
 			//UpdateLinkInnovations();
 			//UpdateNodeIndexCounter();
 			ResetNodeValues();
+			ResetPopulationFitness();
 			//Speciate();
 		}
 	}
